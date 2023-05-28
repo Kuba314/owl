@@ -8,16 +8,13 @@ import pyaudio
 class Synthesizer:
     rate: int
 
-    def synthesize(self, frequency_strengths: np.ndarray, duration: int) -> np.ndarray:
+    def synthesize(self, freq_strengths: dict[float, float], duration: int) -> np.ndarray:
         signal = np.zeros(duration * self.rate)
-        frequency_count = len(frequency_strengths)
-        # frequencies = np.logspace(1.8, 3.5, frequency_count)
-        frequencies = [440, 440*5/4, 440*4/3, 440*3/2]
-        for strength, frequency in zip(frequency_strengths, frequencies):
+        for frequency, strength in freq_strengths.items():
             time = np.arange(duration * self.rate) / self.rate
             offset = np.random.uniform(0, 2 * np.pi)
             signal += strength * np.cos(2 * np.pi * frequency * time + offset)
-        return signal / frequency_count
+        return signal / len(freq_strengths)
     
     def play(self, signal: np.ndarray) -> None:
         p = pyaudio.PyAudio()
