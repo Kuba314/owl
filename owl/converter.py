@@ -6,7 +6,7 @@ from typing import Callable, Iterator
 import cv2
 from cv2 import Mat
 from cv2 import resize
-from owl.curves import hilbert_curve
+from owl.curves import hilbert_curve, peano_curve
 
 
 class Converter(ABC):
@@ -76,7 +76,38 @@ class HilbertConverter(GenericCurveConverter):
         super().__init__(curve_order, 2**curve_order, hilbert_curve)
 
     def assign_frequencies(self, brightness_values: list[float]) -> dict[float, float]:
-        frequencies = [440, 440 * 5 / 4, 440 * 4 / 3, 440 * 3 / 2]
+        base = 440.0
+        frequencies = [
+            base,
+            base * 5 / 4,
+            base * 4 / 3,
+            base * 3 / 2,
+        ]
+        return dict(zip(frequencies, brightness_values))
+
+
+class PeanoConverter(GenericCurveConverter):
+    def __init__(self, curve_order: int) -> None:
+        assert curve_order == 1, "Only order 1 curve (3x3) supported so far"
+        super().__init__(curve_order, 3**curve_order, peano_curve)
+
+    def assign_frequencies(self, brightness_values: list[float]) -> dict[float, float]:
+        base = 440.0
+
+        # https://en.wikipedia.org/wiki/Just_intonation
+        # fmt: off
+        frequencies = [
+            base,           # base
+            base *  9 / 8,  # second
+            base *  5 / 4,  # third
+            base *  4 / 3,  # fourth
+            base *  3 / 2,  # fifth
+            base *  5 / 3,  # sixth
+            base * 16 / 9,  # minor seventh
+            base * 15 / 8,  # major seventh
+            base * 2,       # octave
+        ]
+        # fmt: on
         return dict(zip(frequencies, brightness_values))
 
 
