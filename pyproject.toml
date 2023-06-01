@@ -16,6 +16,7 @@ pyaudio = "^0.2.13"
 
 [tool.poetry.scripts]
 camera-test = "owl.scripts.camera_test:main"
+soundgen-test = "owl.scripts.soundgen_test:main"
 
 [tool.poetry.group.dev]
 optional = true
