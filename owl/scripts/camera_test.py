@@ -2,7 +2,7 @@ import cv2
 from argparse import ArgumentParser, Namespace
 
 from owl.converter import Converter, HilbertConverter, DivideConverter, PeanoConverter
-from owl.scripts.soundgen_test import Soundgen
+from owl.soundgen import Soundgen
 
 
 converters: dict[str, Converter] = {
