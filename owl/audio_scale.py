@@ -14,8 +14,8 @@ class AudioScale(ABC):
         self._min = self.to_scale(self.min_hz)
         self._max = self.to_scale(self.max_hz)
 
-    def get_range(self, count: int) -> np.ndarray:
-        return np.array(list(map(self.to_hz, np.linspace(self._min, self._max, count))))
+    def get_range(self, count: int) -> list[float]:
+        return list(map(self.to_hz, np.linspace(self._min, self._max, count)))
 
     @abstractmethod
     def to_scale(self, value: float) -> float:
@@ -29,7 +29,7 @@ class AudioScale(ABC):
 class MelScale(AudioScale):
     def to_scale(self, value: float) -> float:
         # https://en.wikipedia.org/wiki/Mel_scale#Formula
-        return 2595 * math.log(1 + value / 700)
+        return 2595 * math.log(1 + value / 700, 10)
 
     def to_hz(self, value: float) -> float:
         return (10 ** (value / 2595) - 1) * 700
@@ -38,7 +38,7 @@ class MelScale(AudioScale):
 class BarkScale(AudioScale):
     def to_scale(self, value: float) -> float:
         # https://en.wikipedia.org/wiki/Bark_scale#Conversions
-        return 13 * math.atan(0.00076 * value) + 3.5 * math.atan((value / 7500) ** 2)
+        return 6 * math.asinh(value / 600)
 
     def to_hz(self, value: float) -> float:
-        return (10 ** (value / 2595) - 1) * 700
+        return math.sinh(value / 6) * 600
