@@ -1,9 +1,9 @@
-from cv2 import Mat
+from cv2.typing import MatLike
 import numpy as np
 import numpy.typing as npt
 
 
-Frame = Mat
+Frame = MatLike
 Signal = npt.NDArray[np.float32]
 
 __all__ = [
