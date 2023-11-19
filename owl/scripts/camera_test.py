@@ -1,54 +1,86 @@
+import logging
 import cv2
 from argparse import ArgumentParser, Namespace
 
-from owl.converter import Converter, HilbertConverter, DivideConverter, PeanoConverter
-from owl.soundgen import Soundgen
+import numpy as np
+from owl.audio_scale import BarkScale, MelScale
+
+from owl.converters import CurveConverter, HorizontalScanConverter
+from owl.curves import Curve, HilbertCurve, PeanoCurve
+from owl.soundgen import Envelope
 
 
-converters: dict[str, Converter] = {
-    "divide": DivideConverter(),
-    "hilbert": HilbertConverter(curve_order=1),
-    "peano": PeanoConverter(curve_order=1),
+logger = logging.getLogger("camera_test")
+
+
+curves_classes: dict[str, type[Curve]] = {
+    "hilbert": HilbertCurve,
+    "peano": PeanoCurve,
 }
 
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()
-    parser.add_argument("--converter", choices=list(converters.keys()), required=True)
+    parser.add_argument("--curve", choices=list(curves_classes.keys()), required=True)
+    parser.add_argument("--curve-order", type=int, default=1)
     return parser.parse_args()
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.DEBUG)
     args = parse_args()
+
+    # open webcam capture
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         raise Exception("Capture didn't open")
 
-    freqs = [
-        440,
-        440 * 3 / 2,
-        440 * 5 / 4,
-        440 * 16 / 9,
-    ]
+    # instantiate converter
+    # curve_cls = curves_classes[args.curve]
+    # curve = curve_cls(order=args.curve_order)
+    scale = MelScale(100, 800)
+    # frequencies = scale.get_range(curve.side_length**2)
+    # converter = CurveConverter(curve, frequencies)
+    sound_cue_duration = 0.01
+    sound_cue_volume = 0.1
+    sound_cue = (
+        np.sin(
+            np.linspace(
+                0,
+                2 * np.pi * 1000 * sound_cue_duration,
+                int(48000 * sound_cue_duration),
+            )
+        )
+        * sound_cue_volume
+    )
+    # envelope = Envelope(0.015, 0.001, 0.001, 0.8)
+    # sound_cue = envelope.apply(sound_cue, 48000)
+    # signal = np.sin(np.linspace(0, 2 * np.pi, int(48000 / 1000)))
+    converter = HorizontalScanConverter(
+        ms_per_frame=1000,
+        strip_count=8,
+        frequencies=scale.get_range(8),
+        sound_cue=sound_cue,
+    )
 
-    converter = converters[args.converter]
-    soundgen = Soundgen(freqs=freqs)
+    logger.info("Registering callback")
+    converter.start()
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Couldn't read from capture")
+    # main loop
+    try:
+        while True:
+            # read frame from webcam capture
+            ret, frame = cap.read()
+            if not ret:
+                logger.error("Couldn't read from capture")
 
-        freq_volumes = converter.convert(cv2.flip(frame, 1))
-        soundgen.set_volumes(freq_volumes.values(), backoff=0.01)
+            # pass frame to converter
+            converter.on_new_frame(frame)
 
-        key_press = cv2.waitKey(1)
-        if key_press == ord("q"):
-            break
-        # if key_press == ord("p"):
-        #     print(freqs)
-        #     signal = synth.synthesize(freqs, 1)
-        #     synth.play(signal)
-
-    cap.release()
-    cv2.destroyAllWindows()
+            key_press = cv2.waitKey(1)
+            if key_press == ord("q"):
+                break
+    finally:
+        converter.stop()
+        cap.release()
+        cv2.destroyAllWindows()

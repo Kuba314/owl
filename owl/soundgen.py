@@ -1,9 +1,16 @@
-from dataclasses import dataclass
-from collections.abc import Mapping, Iterator, Iterable, Sequence
+from dataclasses import dataclass, field
+from collections.abc import Mapping, Iterator, Iterable, Sequence, Callable
 import itertools
+import logging
 
 import numpy as np
+import numpy.typing as npt
 import pyaudio
+from pyaudio import Stream
+
+from owl.types import Signal
+
+logger = logging.getLogger("soundgen")
 
 
 @dataclass
@@ -31,18 +38,25 @@ class Envelope:
 
 @dataclass
 class FreqGen:
-    def __init__(self, frequency: float, sample_rate: int, initial_volume: float = 1.0):
-        self.frequency = frequency
-        self.sample_rate = sample_rate
+    frequency: float
+    sample_rate: int
+    initial_volume: float = 1.0
+
+    def __post_init__(self) -> None:
+        logger.debug(
+            f"Initializing FreqGen(hz={self.frequency:.02f}, Fs={self.sample_rate})"
+        )
 
         signal = np.sin(
-            np.linspace(0, 2 * np.pi, int(sample_rate / frequency), endpoint=False)
+            np.linspace(
+                0, 2 * np.pi, int(self.sample_rate / self.frequency), endpoint=False
+            )
         )
 
         self._freq_gen: Iterator[float] = itertools.cycle(signal)
-        self._vol_gen: Iterator[float] = itertools.repeat(initial_volume)
+        self._vol_gen: Iterator[float] = itertools.repeat(self.initial_volume)
 
-    def get_next_samples(self, count: int) -> np.ndarray:
+    def get_next_samples(self, count: int) -> npt.NDArray[np.float32]:
         freqs = np.fromiter(self._freq_gen, float, count=count)
         vols = np.fromiter(self._vol_gen, float, count=count)
         return freqs * vols
@@ -56,15 +70,39 @@ class FreqGen:
 
 
 @dataclass
-class Soundgen:
+class MultiFreqGen:
     freqs: Sequence[float]
     sample_rate: int = 48000
-    chunk_size: int = 1024
 
     def __post_init__(self) -> None:
+        logger.debug(f"Initializing MultiFreqGen(freqs={self.freqs})")
+
         self._signal_gens = [
             FreqGen(freq, self.sample_rate, initial_volume=0.0) for freq in self.freqs
         ]
+
+    def set_volumes(self, volumes: Iterable[float], backoff: float) -> None:
+        for signal_gen, volume in zip(self._signal_gens, volumes):
+            signal_gen.set_volume(volume, backoff=backoff)
+
+    def get_next_samples(self, count) -> Signal:
+        signals = [gen.get_next_samples(count) for gen in self._signal_gens]
+        return np.sum(signals, axis=0) / len(self._signal_gens)
+
+
+@dataclass
+class AudioOutputStream:
+    next_samples_callback: Callable[[int], Signal]
+    sample_rate: int = 48000
+    chunk_size: int = 1024
+
+    _stream: Stream | None = field(default=None, init=False)
+
+    def open(self) -> None:
+        if self._stream is not None:
+            raise Exception("Output stream already open")
+
+        logger.debug("Opening PyAudio stream")
 
         pa = pyaudio.PyAudio()
         self._stream = pa.open(
@@ -76,15 +114,15 @@ class Soundgen:
             stream_callback=self._callback,
         )
 
-    def set_volumes(self, volumes: Iterable[float], backoff: float) -> None:
-        for signal_gen, volume in zip(self._signal_gens, volumes):
-            signal_gen.set_volume(volume, backoff=backoff)
+    def close(self) -> None:
+        if self._stream is None:
+            raise Exception("Output stream is not open")
 
-    def stop(self) -> None:
+        logger.debug("Closing PyAudio stream")
         self._stream.close()
 
     def __del__(self) -> None:
-        self.stop()
+        self.close()
 
     def _callback(
         self,
@@ -93,6 +131,5 @@ class Soundgen:
         time_info: Mapping[str, float],
         status_flags: int,
     ) -> tuple[bytes, int]:
-        signals = [gen.get_next_samples(frame_count) for gen in self._signal_gens]
-        signal = np.sum(signals, axis=0) / len(self._signal_gens)
+        signal = np.array(self.next_samples_callback(frame_count))
         return signal.astype(np.float32).tobytes(), pyaudio.paContinue

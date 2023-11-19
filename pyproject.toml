@@ -10,7 +10,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.11"
 opencv-python = "^4.7.0.68"
-numpy = "^1.24.2"
+numpy = "^1.26.0"
 hilbertcurve = "^2.0.5"
 pyaudio = "^0.2.13"
 
@@ -26,7 +26,7 @@ mypy = "^1.0.0"
 types-pyaudio = "^0.2.16.5"
 
 [[tool.mypy.overrides]]
-module = ["cv2.*", "hilbertcurve.*"]
+module = ["cv2.*", "hilbertcurve.*", "numpy"]
 ignore_missing_imports = true
 
 
