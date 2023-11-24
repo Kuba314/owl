@@ -4,8 +4,9 @@ import cv2
 
 from owl.curves import Curve
 from owl.types import Frame
-from .base import ConstFreqConverter
+
 from ..utils import make_square
+from .base import ConstFreqConverter
 
 
 @dataclass

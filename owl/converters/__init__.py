@@ -1,7 +1,6 @@
 from .base import BaseConverter
-from .static import ConstFreqConverter, CurveConverter, HilbertSpreadConverter
 from .dynamic import HorizontalScanConverter
-
+from .static import ConstFreqConverter, CurveConverter, HilbertSpreadConverter
 
 __all__ = [
     "BaseConverter",

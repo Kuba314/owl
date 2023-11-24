@@ -1,9 +1,9 @@
 from abc import abstractmethod
-
 from dataclasses import dataclass, field
 
 from owl.soundgen import MultiFreqGen
-from owl.types import Signal, Frame
+from owl.types import Frame, Signal
+
 from ..base import BaseConverter
 
 

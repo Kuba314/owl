@@ -1,12 +1,12 @@
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from collections.abc import Mapping, Iterator, Iterable, Sequence, Callable
 import itertools
 import logging
 
+from pyaudio import Stream
 import numpy as np
 import numpy.typing as npt
 import pyaudio
-from pyaudio import Stream
 
 from owl.types import Signal
 

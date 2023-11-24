@@ -1,14 +1,13 @@
-import logging
-import cv2
 from argparse import ArgumentParser, Namespace
+import logging
 
+import cv2
 import numpy as np
-from owl.audio_scale import BarkScale, MelScale
 
+from owl.audio_scale import BarkScale, MelScale
 from owl.converters import CurveConverter, HorizontalScanConverter
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.soundgen import Envelope
-
 
 logger = logging.getLogger("camera_test")
 

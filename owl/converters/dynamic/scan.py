@@ -1,14 +1,14 @@
 from collections import deque
 from dataclasses import dataclass
 import logging
-import numpy as np
+
 import cv2
+import numpy as np
 
 from owl.soundgen import MultiFreqGen
 from owl.types import Frame
 
 from .base import DynamicConverter
-
 
 logger = logging.getLogger("converter")
 

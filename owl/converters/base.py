@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 from dataclasses import dataclass, field
 
 from owl.soundgen import AudioOutputStream

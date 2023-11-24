@@ -1,13 +1,13 @@
 from abc import abstractmethod
+from dataclasses import dataclass, field
 import logging
 import time
 
 import numpy as np
-from dataclasses import dataclass, field
 
-from ..base import BaseConverter
 from owl.types import Frame, Signal
 
+from ..base import BaseConverter
 
 logger = logging.getLogger("converter")
 
