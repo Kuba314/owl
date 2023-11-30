@@ -11,7 +11,9 @@ from owl.converters import (
     CircularScanConverter,
 )
 from owl.curves import Curve, HilbertCurve, PeanoCurve
+from owl.events import handle_events, handler
 from owl.soundgen import Envelope
+from owl.types import Frame
 
 logger = logging.getLogger("camera_test")
 
@@ -20,6 +22,17 @@ curves_classes: dict[str, type[Curve]] = {
     "hilbert": HilbertCurve,
     "peano": PeanoCurve,
 }
+
+
+@handler("converter:output")
+def handle_converter_output(frame: Frame) -> None:
+    cv2.imshow("Converter output", frame)
+
+
+@handler("converter:outputs")
+def handle_converter_outputs(frames: list[Frame]) -> None:
+    for i, frame in enumerate(frames, 1):
+        cv2.imshow(f"Converter output {i}", frame)
 
 
 def parse_args() -> Namespace:
@@ -87,6 +100,7 @@ def main() -> None:
 
             # pass frame to converter
             converter.on_new_frame(frame)
+            handle_events()
 
             key_press = cv2.waitKey(1)
             if key_press == ord("q"):

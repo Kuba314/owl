@@ -4,6 +4,7 @@ import itertools
 import cv2
 
 from owl.curves import HilbertCurve
+from owl.events import notify
 from owl.types import Frame
 
 from ..utils import make_square
@@ -29,15 +30,18 @@ class HilbertSpreadConverter(ConstFreqConverter):
         frame = make_square(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
 
         volumes: list[float] = []
+        frames = []
         for side_length in (2**i for i in itertools.count()):
             resized_frame = cv2.resize(
                 frame, (side_length, side_length), interpolation=cv2.INTER_AREA
             )
+            frames.append(resized_frame)
 
             curve = HilbertCurve(order=side_length - 1)
             for point in curve.generate():
                 volumes.extend(resized_frame[point] / 255)
 
+        notify("converter:outputs", frames)
         return volumes
 
     @staticmethod

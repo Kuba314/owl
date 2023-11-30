@@ -4,6 +4,7 @@ import logging
 import cv2
 import numpy as np
 
+from owl.events import notify
 from owl.soundgen import MultiFreqGen
 from owl.types import Frame, Signal
 
@@ -34,6 +35,7 @@ class HorizontalScanConverter(ScanConverter):
     def convert_frame(self, frame: Frame) -> Signal:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame = cv2.resize(frame, (self.strip_count, len(self.frequencies)))
+        notify("converter:output", frame)
 
         signal = np.empty(shape=[0], dtype=np.float32)
         for i in range(self.strip_count):
@@ -52,6 +54,7 @@ class VerticalScanConverter(ScanConverter):
     def convert_frame(self, frame: Frame) -> Signal:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame = cv2.resize(frame, (len(self.frequencies), self.strip_count))
+        notify("converter:output", frame)
 
         signal = np.empty(shape=[0], dtype=np.float32)
         for i in range(self.strip_count):
@@ -76,6 +79,7 @@ class CircularScanConverter(ScanConverter):
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame = cv2.resize(frame, (side_length, side_length))
+        notify("converter:output", frame)
 
         signal = np.empty(shape=[0], dtype=np.float32)
         for i in range(1, self.strip_count + 1):
