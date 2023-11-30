@@ -5,7 +5,11 @@ import cv2
 import numpy as np
 
 from owl.audio_scale import BarkScale, MelScale
-from owl.converters import CurveConverter, HorizontalScanConverter
+from owl.converters import (
+    CurveConverter,
+    HorizontalScanConverter,
+    CircularScanConverter,
+)
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.soundgen import Envelope
 
@@ -27,7 +31,7 @@ def parse_args() -> Namespace:
 
 def main() -> None:
     logging.basicConfig(level=logging.DEBUG)
-    args = parse_args()
+    # args = parse_args()
 
     # open webcam capture
     cap = cv2.VideoCapture(0)
@@ -39,7 +43,6 @@ def main() -> None:
     # curve = curve_cls(order=args.curve_order)
     scale = MelScale(100, 800)
     # frequencies = scale.get_range(curve.side_length**2)
-    # converter = CurveConverter(curve, frequencies)
     sound_cue_duration = 0.01
     sound_cue_volume = 0.1
     sound_cue = (
@@ -55,12 +58,18 @@ def main() -> None:
     # envelope = Envelope(0.015, 0.001, 0.001, 0.8)
     # sound_cue = envelope.apply(sound_cue, 48000)
     # signal = np.sin(np.linspace(0, 2 * np.pi, int(48000 / 1000)))
-    converter = HorizontalScanConverter(
-        ms_per_frame=1000,
-        strip_count=8,
+    converter = CircularScanConverter(
+        strip_count=4,
         frequencies=scale.get_range(8),
-        sound_cue=sound_cue,
+        ms_per_frame=1000,
+        ms_between_new_frames=1000 / 10 + 50,
     )
+    # converter = HorizontalScanConverter(
+    #     ms_per_frame=1000,
+    #     strip_count=8,
+    #     frequencies=scale.get_range(8),
+    #     sound_cue=sound_cue,
+    # )
 
     logger.info("Registering callback")
     converter.start()
@@ -69,7 +78,10 @@ def main() -> None:
     try:
         while True:
             # read frame from webcam capture
-            ret, frame = cap.read()
+            try:
+                ret, frame = cap.read()
+            except KeyboardInterrupt:
+                break
             if not ret:
                 logger.error("Couldn't read from capture")
 
