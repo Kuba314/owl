@@ -47,9 +47,10 @@ class DynamicConverter(BaseConverter):
 
     def on_new_frame(self, frame: Frame) -> None:
         # do nothing if we can afford to wait for the next frame
+        # three video frames should be enough time for new frame to be inserted into deque
         if (
             1000 * len(self._audio_samples_queue) / self.sample_rate
-            > self.ms_between_new_frames
+            > 3 * self.ms_between_new_frames
         ):
             return
 
@@ -58,7 +59,9 @@ class DynamicConverter(BaseConverter):
             logger.debug("Inserting sound cue")
             self._sound_cue_queue.extend(self.sound_cue)
 
-        logger.debug("Updating dynamic soundgen")
+        queue_ms_left = 1000 * len(self._audio_samples_queue) / self.sample_rate
+        logger.debug(f"Converting new video frame with {queue_ms_left:.0f}ms to spare")
+
         self._audio_samples_queue.extend(self.convert_frame(frame))
 
     def get_next_samples(self, count: int) -> Signal:

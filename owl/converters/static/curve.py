@@ -21,6 +21,7 @@ class CurveConverter(ConstFreqConverter):
         resized_frame = cv2.resize(
             frame, (side_length, side_length), interpolation=cv2.INTER_AREA
         )
-        notify("converter:output", frame)
+        notify("converter:frame:pre", frame)
+        notify("converter:frame:post", resized_frame)
 
         return [resized_frame[y][x] / 255 for x, y in self.curve.generate()]
