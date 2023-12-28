@@ -10,6 +10,7 @@ import pyaudio
 
 from owl.types import Signal
 
+
 logger = logging.getLogger("soundgen")
 
 
@@ -64,7 +65,7 @@ class FreqGen:
     def get_next_samples(self, count: int) -> npt.NDArray[np.float32]:
         freqs = np.fromiter(self._freq_gen, float, count=count)
         vols = np.fromiter(self._vol_gen, float, count=count)
-        return freqs * vols
+        return freqs * vols  # type: ignore (https://github.com/microsoft/pylance-release/discussions/2660)
 
     def set_volume(self, volume: float, backoff: float) -> None:
         current_volume = next(self._vol_gen)

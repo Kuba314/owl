@@ -4,11 +4,12 @@ from dataclasses import dataclass, field
 import logging
 
 import numpy as np
-from owl.soundgen import Envelope
 
+from owl.soundgen import Envelope
 from owl.types import Frame, Signal
 
 from ..base import BaseConverter
+
 
 logger = logging.getLogger("converter")
 

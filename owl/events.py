@@ -2,6 +2,7 @@ from collections.abc import Callable
 from typing import Any
 import logging
 
+
 _listeners: dict[str, list[Callable[[Any], None]]] = {}
 
 

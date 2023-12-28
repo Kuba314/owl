@@ -1,9 +1,10 @@
 from .scan import (
-    HorizontalScanConverter,
-    VerticalScanConverter,
     CircularScanConverter,
+    HorizontalScanConverter,
     ScanConverter,
+    VerticalScanConverter,
 )
+
 
 __all__ = [
     "ScanConverter",

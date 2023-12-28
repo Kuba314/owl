@@ -1,18 +1,18 @@
 import logging
 import time
 
+from arcparse import arcparser, option, positional, subparsers
 import cv2
 import numpy as np
-from arcparse import arcparser, positional, option, subparsers
 
 from owl.audio_scale import AudioScale, BarkScale, MelScale
 from owl.converters import (
+    BaseConverter,
+    CircularScanConverter,
     CurveConverter,
     HorizontalScanConverter,
-    CircularScanConverter,
-    BaseConverter,
-    VerticalScanConverter,
     ScanConverter,
+    VerticalScanConverter,
 )
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.events import handle_events, handler

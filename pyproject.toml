@@ -25,11 +25,16 @@ optional = true
 types-pyaudio = "^0.2.16.5"
 pyright = "^1.1.343"
 ruff = "^0.1.9"
+isort = "^5.13.2"
 
 [[tool.mypy.overrides]]
 module = ["cv2.*", "hilbertcurve.*", "numpy"]
 ignore_missing_imports = true
 
+[tool.isort]
+profile = "black"
+from_first = "true"
+lines_after_imports = 2
 
 [build-system]
 requires = ["poetry-core"]
