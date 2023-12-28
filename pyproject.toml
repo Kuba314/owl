@@ -24,6 +24,7 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 types-pyaudio = "^0.2.16.5"
 pyright = "^1.1.343"
+ruff = "^0.1.9"
 
 [[tool.mypy.overrides]]
 module = ["cv2.*", "hilbertcurve.*", "numpy"]
