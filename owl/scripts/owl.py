@@ -16,7 +16,7 @@ from owl.converters import (
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.events import handle_events, handler
 from owl.soundgen import Envelope
-from owl.types import Frame
+from owl.types import Frame, Signal
 
 logger = logging.getLogger("camera_test")
 
@@ -49,6 +49,8 @@ class ScanArgs:
     freqs_per_strip: int = option("-n")
     ms_per_frame: int
 
+    cue: bool
+
 
 def audio_scale_cls(arg: str) -> type[AudioScale]:
     return {
@@ -59,6 +61,8 @@ def audio_scale_cls(arg: str) -> type[AudioScale]:
 
 @arcparser
 class Args:
+    input_type: str = option(default="camera", choices=["camera", "file"])
+    input_spec: str = option(default="0")
     # input: str = option("-i")
     # output: Literal["window", "audio", "video"] = option("-o")
 
@@ -86,49 +90,62 @@ def handle_converter_outputs(frames: list[Frame]) -> None:
         cv2.imshow(f"Converter output {i}", frame)
 
 
-def main() -> None:
-    logging.basicConfig(level=logging.DEBUG)
-    parsed = Args.parse()
+def generate_sound_cue(sample_rate: int) -> Signal:
+    sound_cue_duration = 0.03
+    sound_cue_volume = 0.1
+    sound_cue = (
+        np.sin(
+            np.linspace(
+                0,
+                2 * np.pi * 1000 * sound_cue_duration,
+                int(sample_rate * sound_cue_duration),
+            )
+        )
+        * sound_cue_volume
+    )
+    envelope = Envelope(0.003, 0.0005, 0.0005, 0.8)
+    sound_cue = envelope.apply(sound_cue, sample_rate)
+    return sound_cue
 
-    # open webcam capture
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        raise Exception("Capture didn't open")
 
+def open_capture(input_type: str, input_spec: str) -> cv2.VideoCapture:
+    if input_type == "camera":
+        return cv2.VideoCapture(int(input_spec))
+    elif input_type == "file":
+        return cv2.VideoCapture(input_spec)
+    else:
+        assert False, "unreachable"
+
+
+def instantiate_converter(parsed: Args) -> BaseConverter:
     scale = parsed.audio_scale_cls(parsed.lowest_frequency, parsed.highest_frequency)
 
-    converter: BaseConverter
     if isinstance(curve_args := parsed.converter, CurveArgs):
         curve = curve_args.curve_cls(order=curve_args.order)
-        converter = CurveConverter(
+        return CurveConverter(
             frequencies=scale.get_range(curve.side_length**2),
             curve=curve,
         )
     elif isinstance(scan_args := parsed.converter, ScanArgs):
-        converter = scan_args.scan_conv_cls(
+        return scan_args.scan_conv_cls(
             strip_count=scan_args.strip_count,
             frequencies=scale.get_range(scan_args.freqs_per_strip),
             ms_per_frame=scan_args.ms_per_frame,
+            sound_cue=generate_sound_cue(48000) if scan_args.cue else None,
         )
     else:
         assert False, "unreachable"
 
-    # sound_cue_duration = 0.01
-    # sound_cue_volume = 0.1
-    # sound_cue = (
-    #     np.sin(
-    #         np.linspace(
-    #             0,
-    #             2 * np.pi * 1000 * sound_cue_duration,
-    #             int(48000 * sound_cue_duration),
-    #         )
-    #     )
-    #     * sound_cue_volume
-    # )
-    # envelope = Envelope(0.015, 0.001, 0.001, 0.8)
-    # sound_cue = envelope.apply(sound_cue, 48000)
-    # signal = np.sin(np.linspace(0, 2 * np.pi, int(48000 / 1000)))
-    logger.info("Registering callback")
+
+def main() -> None:
+    logging.basicConfig(level=logging.DEBUG)
+    parsed = Args.parse()
+
+    cap = open_capture(parsed.input_type, parsed.input_spec)
+    if not cap.isOpened():
+        raise Exception("Failed to open cv2 capture")
+
+    converter = instantiate_converter(parsed)
     converter.start()
 
     # main loop
