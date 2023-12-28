@@ -1,4 +1,5 @@
 import logging
+import time
 
 import cv2
 import numpy as np
@@ -148,24 +149,29 @@ def main() -> None:
     converter = instantiate_converter(parsed)
     converter.start()
 
-    # main loop
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    last_frame = time.time() * 1000
     try:
-        while True:
-            # read frame from webcam capture
-            try:
-                ret, frame = cap.read()
-            except KeyboardInterrupt:
-                break
-            if not ret:
-                logger.error("Couldn't read from capture")
+        while cap.isOpened():
+            # wait for next frame
+            while 1000 * time.time() - last_frame < 1000 / fps:
+                time.sleep(0.01)
 
-            # pass frame to converter
+            # read frame from capture
+            success, frame = cap.read()
+            if not success:
+                logger.error("Couldn't read from capture")
+                break
+
+            last_frame += 1000 / fps
             converter.on_new_frame(frame)
             handle_events()
 
-            key_press = cv2.waitKey(1)
+            key_press = cv2.waitKey(delay=1)
             if key_press == ord("q"):
                 break
+    except KeyboardInterrupt:
+        pass
     finally:
         converter.stop()
         cap.release()
