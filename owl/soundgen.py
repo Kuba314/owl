@@ -125,9 +125,11 @@ class AudioOutputStream:
 
         logger.debug("Closing PyAudio stream")
         self._stream.close()
+        self._stream = None
 
     def __del__(self) -> None:
-        self.close()
+        if self._stream is not None:
+            self.close()
 
     def _callback(
         self,
