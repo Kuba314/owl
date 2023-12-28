@@ -73,6 +73,7 @@ class Args:
     )
     lowest_frequency: float = option("-lo", default=100)
     highest_frequency: float = option("-hi", default=800)
+    sample_rate: int = option(default=48000)
     converter: CurveArgs | ScanArgs = subparsers("curve", "scan")
 
 
@@ -127,13 +128,15 @@ def instantiate_converter(parsed: Args) -> BaseConverter:
         return CurveConverter(
             frequencies=scale.get_range(curve.side_length**2),
             curve=curve,
+            sample_rate=parsed.sample_rate,
         )
     elif isinstance(scan_args := parsed.converter, ScanArgs):
         return scan_args.scan_conv_cls(
             strip_count=scan_args.strip_count,
             frequencies=scale.get_range(scan_args.freqs_per_strip),
             ms_per_frame=scan_args.ms_per_frame,
-            sound_cue=generate_sound_cue(48000) if scan_args.cue else None,
+            sound_cue=generate_sound_cue(parsed.sample_rate) if scan_args.cue else None,
+            sample_rate=parsed.sample_rate,
         )
     else:
         assert False, "unreachable"
