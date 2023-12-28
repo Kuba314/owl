@@ -28,12 +28,17 @@ class Envelope:
             len(signal) - attack_duration - decay_duration - release_duration
         )
 
-        attack = np.linspace(0, 1, attack_duration)
-        decay = np.linspace(1, self.sustain_level, decay_duration)
+        attack = 1 - np.linspace(-1, 0, attack_duration) ** 2
+        decay = (
+            np.linspace(-1, 0, decay_duration) ** 2 * (1 - self.sustain_level)
+            + self.sustain_level
+        )
         sustain = np.full((sustain_duration,), self.sustain_level)
-        release = np.linspace(self.sustain_level, 0, release_duration)
+        release = np.linspace(-1, 0, release_duration) ** 2 * self.sustain_level
 
-        return signal * np.concatenate((attack, decay, sustain, release))
+        env = np.concatenate((attack, decay, sustain, release))
+        out = signal * env
+        return out
 
 
 @dataclass
