@@ -107,7 +107,7 @@ class AudioOutputStream:
         if self._stream is not None:
             raise Exception("Output stream already open")
 
-        logger.debug("Opening PyAudio stream")
+        logger.info("Opening PyAudio stream")
 
         pa = pyaudio.PyAudio()
         self._stream = pa.open(
@@ -123,7 +123,7 @@ class AudioOutputStream:
         if self._stream is None:
             raise Exception("Output stream is not open")
 
-        logger.debug("Closing PyAudio stream")
+        logger.info("Closing PyAudio stream")
         self._stream.close()
         self._stream = None
 
