@@ -9,9 +9,10 @@ from owl.converters import (
     CurveConverter,
     HorizontalScanConverter,
     CircularScanConverter,
+    BaseConverter,
+    VerticalScanConverter,
+    ScanConverter,
 )
-from owl.converters.base import BaseConverter
-from owl.converters.dynamic.scan import ScanConverter, VerticalScanConverter
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.events import handle_events, handler
 from owl.soundgen import Envelope
