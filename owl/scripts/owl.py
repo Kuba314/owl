@@ -160,17 +160,7 @@ def init_logging() -> None:
     logging.basicConfig
 
 
-def main() -> None:
-    init_logging()
-    parsed = Args.parse()
-
-    cap = open_capture(parsed.input_type, parsed.input_spec)
-    if not cap.isOpened():
-        raise Exception("Failed to open cv2 capture")
-
-    converter = instantiate_converter(parsed)
-    converter.start()
-
+def main_loop(cap: cv2.VideoCapture, converter: BaseConverter) -> None:
     fps = cap.get(cv2.CAP_PROP_FPS)
     last_frame = time.time() * 1000
     try:
@@ -198,3 +188,17 @@ def main() -> None:
         converter.stop()
         cap.release()
         cv2.destroyAllWindows()
+
+
+def main() -> None:
+    init_logging()
+    parsed = Args.parse()
+
+    cap = open_capture(parsed.input_type, parsed.input_spec)
+    if not cap.isOpened():
+        raise Exception("Failed to open cv2 capture")
+
+    converter = instantiate_converter(parsed)
+    converter.start()
+
+    main_loop(cap, converter)
