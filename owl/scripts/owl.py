@@ -1,7 +1,7 @@
 import logging
 import time
 
-from arcparse import arcparser, option, positional, subparsers
+from arcparse import arcparser, dict_option, dict_positional, option, subparsers
 import cv2
 import numpy as np
 
@@ -23,29 +23,25 @@ from owl.types import Frame, Signal
 logger = logging.getLogger("owl")
 
 
-def curve_cls(arg: str) -> type[Curve]:
-    return {
-        "hilbert": HilbertCurve,
-        "peano": PeanoCurve,
-    }[arg]
-
-
 class CurveArgs:
-    curve_cls: type[Curve] = positional(name_override="curve", converter=curve_cls)
+    curve_cls: type[Curve] = dict_positional(
+        {
+            "hilbert": HilbertCurve,
+            "peano": PeanoCurve,
+        },
+        name_override="curve",
+    )
     order: int = 1
 
 
-def scan_conv_cls(arg: str) -> type[ScanConverter]:
-    return {
-        "vertical": VerticalScanConverter,
-        "horizontal": HorizontalScanConverter,
-        "circular": CircularScanConverter,
-    }[arg]
-
-
 class ScanArgs:
-    scan_conv_cls: type[ScanConverter] = positional(
-        name_override="scan_type", converter=scan_conv_cls
+    scan_conv_cls: type[ScanConverter] = dict_positional(
+        {
+            "vertical": VerticalScanConverter,
+            "horizontal": HorizontalScanConverter,
+            "circular": CircularScanConverter,
+        },
+        name_override="scan_type",
     )
     strip_count: int = option("-c")
     freqs_per_strip: int = option("-n")
@@ -54,22 +50,19 @@ class ScanArgs:
     cue: bool
 
 
-def audio_scale_cls(arg: str) -> type[AudioScale]:
-    return {
-        "mel": MelScale,
-        "bark": BarkScale,
-    }[arg]
-
-
 @arcparser
 class Args:
     input_type: str = option(default="camera", choices=["camera", "file"])
     input_spec: str = option(default="0")
-    # input: str = option("-i")
     # output: Literal["window", "audio", "video"] = option("-o")
 
-    audio_scale_cls: type[AudioScale] = option(
-        name_override="scale", converter=audio_scale_cls, default=MelScale
+    audio_scale_cls: type[AudioScale] = dict_option(
+        {
+            "mel": MelScale,
+            "bark": BarkScale,
+        },
+        name_override="scale",
+        default=MelScale,
     )
     lowest_frequency: float = option("-lo", default=100)
     highest_frequency: float = option("-hi", default=800)
@@ -120,7 +113,7 @@ def open_capture(input_type: str, input_spec: str) -> cv2.VideoCapture:
         assert False, "unreachable"
 
 
-def instantiate_converter(parsed: Args) -> BaseConverter:
+def instantiate_converter(parsed: Args.shape) -> BaseConverter:
     scale = parsed.audio_scale_cls(parsed.lowest_frequency, parsed.highest_frequency)
 
     if isinstance(curve_args := parsed.converter, CurveArgs):

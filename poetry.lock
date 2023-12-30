@@ -2,14 +2,14 @@
 
 [[package]]
 name = "arcparse"
-version = "0.5.1"
+version = "0.6.2"
 description = "Declare program arguments declaratively and type-safely"
 category = "main"
 optional = false
 python-versions = ">=3.12,<4.0"
 files = [
-    {file = "arcparse-0.5.1-py3-none-any.whl", hash = "sha256:032fc13c2cb18db2e0c0903469d1888efb948b5fea016ca66bfa7ea7d258edfa"},
-    {file = "arcparse-0.5.1.tar.gz", hash = "sha256:7fd852e629d2cdfc18afb709a88cdc83a83b41520097b34a9b070778acb83c8a"},
+    {file = "arcparse-0.6.2-py3-none-any.whl", hash = "sha256:d66b725ff61fe8fe239a4ad212de72715fe77f9fa4bb1aa785490135bccbd27f"},
+    {file = "arcparse-0.6.2.tar.gz", hash = "sha256:db361fb41fc92a09a239fc012cedae96ecdf87e235fdaa81b87f379a18777dfc"},
 ]
 
 [[package]]
@@ -235,4 +235,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b013fd12ec2ca1d4fa858bf6c744e114f7e37b09ab2f0b8c2d935aa68e0aea0f"
+content-hash = "1b4d4f470d67b79bb64d0e7712cb1170e23b0baf62b6c62bc21cb62ef4962cd5"
