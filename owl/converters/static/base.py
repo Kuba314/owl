@@ -14,15 +14,7 @@ class ConstFreqConverter(BaseConverter):
     _cursor_position: tuple[int, int] = field(default=(0, 0), init=False)
 
     def __post_init__(self) -> None:
-        super().__post_init__()
-
         self._sound_gen = MultiFreqGen(freqs=self.frequencies)
-
-    def register_audio_callback(self) -> None:
-        self._audio_stream.open()
-
-    def unregister_audio_callback(self) -> None:
-        self._audio_stream.close()
 
     def on_new_frame(self, frame: Frame) -> None:
         volumes = self._extract_volumes(frame)

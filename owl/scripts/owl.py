@@ -1,3 +1,4 @@
+from collections.abc import Callable
 import logging
 import time
 
@@ -16,7 +17,12 @@ from owl.converters import (
 )
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.events import handle_events, handler
-from owl.soundgen import Envelope
+from owl.soundgen import (
+    BaseAudioOutputStream,
+    Envelope,
+    FileAudioOutputStream,
+    LiveAudioOutputStream,
+)
 from owl.types import Frame, Signal
 
 
@@ -54,7 +60,7 @@ class ScanArgs:
 class Args:
     input_type: str = option(default="camera", choices=["camera", "file"])
     input_spec: str = option(default="0")
-    # output: Literal["window", "audio", "video"] = option("-o")
+    output: str | None = option("-o")
 
     audio_scale_cls: type[AudioScale] = dict_option(
         {
@@ -84,6 +90,31 @@ def handle_converter_output(frame: Frame) -> None:
 def handle_converter_outputs(frames: list[Frame]) -> None:
     for i, frame in enumerate(frames, 1):
         cv2.imshow(f"Converter output {i}", frame)
+
+
+def init_logging() -> None:
+    # edited version of https://stackoverflow.com/a/56944256/8844422
+    class ColoredLevelnameFormatter(logging.Formatter):
+        COLORS = {
+            logging.DEBUG: "\x1b[30m",
+            logging.INFO: "\x1b[1;34m",
+            logging.WARNING: "\x1b[1;33m",
+            logging.ERROR: "\x1b[1;31m",
+            logging.CRITICAL: "\x1b[37;41m",
+        }
+
+        def format(self, record):
+            color = self.COLORS.get(record.levelno)
+            fmt = f"{{asctime}} {{name:14}} {color}{{levelname:10}}\033[0m {{message}}"
+            formatter = logging.Formatter(fmt, style="{")
+            return formatter.format(record)
+
+    logger = logging.getLogger()
+    handler = logging.StreamHandler()
+    handler.setFormatter(ColoredLevelnameFormatter())
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    logging.basicConfig
 
 
 def generate_sound_cue(sample_rate: int) -> Signal:
@@ -135,59 +166,45 @@ def instantiate_converter(parsed: Args.shape) -> BaseConverter:
         assert False, "unreachable"
 
 
-def init_logging() -> None:
-    # edited version of https://stackoverflow.com/a/56944256/8844422
-    class ColoredLevelnameFormatter(logging.Formatter):
-        COLORS = {
-            logging.DEBUG: "\x1b[30m",
-            logging.INFO: "\x1b[1;34m",
-            logging.WARNING: "\x1b[1;33m",
-            logging.ERROR: "\x1b[1;31m",
-            logging.CRITICAL: "\x1b[37;41m",
-        }
-
-        def format(self, record):
-            color = self.COLORS.get(record.levelno)
-            fmt = f"{{asctime}} {{name:14}} {color}{{levelname:10}}\033[0m {{message}}"
-            formatter = logging.Formatter(fmt, style="{")
-            return formatter.format(record)
-
-    logger = logging.getLogger()
-    handler = logging.StreamHandler()
-    handler.setFormatter(ColoredLevelnameFormatter())
-    logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
-    logging.basicConfig
+def instantiate_output_stream(
+    parsed: Args.shape,
+    request_next_samples: Callable[[int], Signal],
+) -> BaseAudioOutputStream:
+    if parsed.output is not None:
+        return FileAudioOutputStream(
+            filename=parsed.output,
+            next_samples_callback=request_next_samples,
+            sample_rate=parsed.sample_rate,
+        )
+    else:
+        return LiveAudioOutputStream(
+            next_samples_callback=request_next_samples,
+            sample_rate=parsed.sample_rate,
+        )
 
 
 def main_loop(cap: cv2.VideoCapture, converter: BaseConverter) -> None:
     fps = cap.get(cv2.CAP_PROP_FPS)
     last_frame = time.time() * 1000
-    try:
-        while cap.isOpened():
-            # wait for next frame
-            while 1000 * time.time() - last_frame < 1000 / fps:
-                time.sleep(0.01)
 
-            # read frame from capture
-            success, frame = cap.read()
-            if not success:
-                logger.error("Couldn't read from capture")
-                break
+    while cap.isOpened():
+        # wait for next frame
+        while 1000 * time.time() - last_frame < 1000 / fps:
+            time.sleep(0.01)
 
-            last_frame += 1000 / fps
-            converter.on_new_frame(frame)
-            handle_events()
+        # read frame from capture
+        success, frame = cap.read()
+        if not success:
+            logger.error("Couldn't read from capture")
+            break
 
-            key_press = cv2.waitKey(delay=1)
-            if key_press == ord("q"):
-                break
-    except KeyboardInterrupt:
-        pass
-    finally:
-        converter.stop()
-        cap.release()
-        cv2.destroyAllWindows()
+        last_frame += 1000 / fps
+        converter.on_new_frame(frame)
+        handle_events()
+
+        key_press = cv2.waitKey(delay=1)
+        if key_press == ord("q"):
+            break
 
 
 def main() -> None:
@@ -199,6 +216,14 @@ def main() -> None:
         raise Exception("Failed to open cv2 capture")
 
     converter = instantiate_converter(parsed)
-    converter.start()
+    output_stream = instantiate_output_stream(parsed, converter.get_next_samples)
 
-    main_loop(cap, converter)
+    output_stream.open()
+    try:
+        main_loop(cap, converter)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        output_stream.close()
+        cap.release()
+        cv2.destroyAllWindows()

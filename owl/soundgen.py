@@ -1,7 +1,12 @@
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import partial
+from threading import Thread
 import itertools
 import logging
+import time
+import wave
 
 from pyaudio import Stream
 import numpy as np
@@ -96,13 +101,23 @@ class MultiFreqGen:
         return np.sum(signals, axis=0) / len(self._signal_gens)
 
 
-@dataclass
-class AudioOutputStream:
+@dataclass(kw_only=True)
+class BaseAudioOutputStream(ABC):
     next_samples_callback: Callable[[int], Signal]
     sample_rate: int = 48000
     chunk_size: int = 1024
 
-    _stream: Stream | None = field(default=None, init=False)
+    @abstractmethod
+    def open(self) -> None:
+        ...
+
+    @abstractmethod
+    def close(self) -> None:
+        ...
+
+
+class LiveAudioOutputStream(BaseAudioOutputStream):
+    _stream: Stream | None = None
 
     def open(self) -> None:
         if self._stream is not None:
@@ -128,10 +143,6 @@ class AudioOutputStream:
         self._stream.close()
         self._stream = None
 
-    def __del__(self) -> None:
-        if self._stream is not None:
-            self.close()
-
     def _callback(
         self,
         in_data: bytes | None,
@@ -141,3 +152,57 @@ class AudioOutputStream:
     ) -> tuple[bytes, int]:
         signal = np.array(self.next_samples_callback(frame_count))
         return signal.astype(np.float32).tobytes(), pyaudio.paContinue
+
+
+@dataclass
+class FileAudioOutputStream(BaseAudioOutputStream):
+    filename: str
+    _thread: Thread | None = field(init=False, default=None)
+    _should_stop: bool = field(init=False, default=False)
+
+    def open(self) -> None:
+        if self._thread is not None:
+            raise Exception("Output stream already open")
+
+        logger.info("Opening wav stream")
+
+        stream = wave.open(self.filename, mode="wb")
+        stream.setnchannels(1)
+        stream.setsampwidth(2)
+        stream.setframerate(self.sample_rate)
+        self._thread = Thread(
+            target=partial(self._sample_request_loop, stream),
+        )
+
+        self._should_stop = False
+        self._thread.start()
+
+    def close(self) -> None:
+        if self._thread is None:
+            raise Exception("Output stream is not open")
+
+        logger.info("Closing wav stream")
+        self._should_stop = True
+        self._thread.join()
+        self._thread = None
+
+    def _sample_request_loop(self, stream: wave.Wave_write) -> None:
+        logger.debug("Started audio request loop")
+
+        frame_count = self.chunk_size
+        fps = self.sample_rate / self.chunk_size
+
+        last_frame = time.time() * 1000
+        while not self._should_stop:
+            # wait for next frame
+            while 1000 * time.time() - last_frame < 1000 / fps:
+                time.sleep(0.01)
+
+            signal = self.next_samples_callback(frame_count)
+            data = (signal * 16383).astype(np.int16).tobytes()
+            stream.writeframes(data)
+
+            last_frame += 1000 / fps
+
+        logger.debug("Stopped audio request loop")
+        stream.close()
