@@ -58,8 +58,11 @@ class ScanArgs:
 
 @arcparser
 class Args:
-    input_type: str = option(default="camera", choices=["camera", "file"])
-    input_spec: str = option(default="0")
+    input: str = option(
+        "-i",
+        default="camera:0",
+        help='input source, use "camera:<index>" or "file:<filename>" (default: "camera:0")',
+    )
     output: str | None = option("-o")
 
     audio_scale_cls: type[AudioScale] = dict_option(
@@ -135,13 +138,19 @@ def generate_sound_cue(sample_rate: int) -> Signal:
     return sound_cue
 
 
-def open_capture(input_type: str, input_spec: str) -> cv2.VideoCapture:
-    if input_type == "camera":
-        return cv2.VideoCapture(int(input_spec))
-    elif input_type == "file":
-        return cv2.VideoCapture(input_spec)
-    else:
-        assert False, "unreachable"
+def open_capture(input: str) -> cv2.VideoCapture:
+    if ":" not in input:
+        raise ValueError('Expected "<method>:<spec>" as input param')
+
+    match input.split(":", 1):
+        case "camera", index:
+            return cv2.VideoCapture(int(index))
+        case "file", filename:
+            return cv2.VideoCapture(filename)
+        case method, _:
+            raise ValueError(f'Invalid input method "{method}"')
+        case _:
+            assert False, "unreachable"
 
 
 def instantiate_converter(parsed: Args.shape) -> BaseConverter:
@@ -211,7 +220,7 @@ def main() -> None:
     init_logging()
     parsed = Args.parse()
 
-    cap = open_capture(parsed.input_type, parsed.input_spec)
+    cap = open_capture(parsed.input)
     if not cap.isOpened():
         raise Exception("Failed to open cv2 capture")
 
