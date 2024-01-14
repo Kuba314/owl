@@ -24,9 +24,6 @@ class ConstFreqConverter(BaseConverter):
     def get_next_samples(self, count: int) -> Signal:
         return self._sound_gen.get_next_samples(count)
 
-    def on_cursor_move(self, position: tuple[int, int]) -> None:
-        self._cursor_position = position
-
     @abstractmethod
     def _extract_volumes(self, frame: Frame) -> list[float]:
         ...
