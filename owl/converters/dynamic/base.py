@@ -58,11 +58,18 @@ class DynamicConverter(BaseConverter):
         self._audio_samples_queue.extend(signal)
 
     def get_next_samples(self, count: int) -> Signal:
+        underflowed = 0
+
         def popleft_or(deq: deque, default=None):
+            nonlocal underflowed
             if not len(deq):
+                underflowed += 1
                 return default
             return deq.popleft()
 
-        return np.array(
+        signal = np.array(
             [popleft_or(self._audio_samples_queue, 0.0) for _ in range(count)]
         )
+        if underflowed:
+            logging.warning(f"Audio underflowed for {underflowed} samples")
+        return signal
