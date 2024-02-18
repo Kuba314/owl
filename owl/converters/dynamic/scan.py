@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 from owl.events import notify
-from owl.soundgen import MultiFreqGen
+from owl.soundgen import MultiSineGen
 from owl.types import Frame, Signal
 
 from .base import DynamicConverter
@@ -24,7 +24,7 @@ class ScanConverter(DynamicConverter):
     def __post_init__(self) -> None:
         super().__post_init__()
 
-        self._sound_gen = MultiFreqGen(self.frequencies)
+        self._sound_gen = MultiSineGen(self.frequencies)
         self._samples_per_strip = int(
             self.ms_per_frame / 1000 * self._sound_gen.sample_rate / self.strip_count
         )

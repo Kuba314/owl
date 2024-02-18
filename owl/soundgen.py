@@ -48,14 +48,14 @@ class Envelope:
 
 
 @dataclass
-class FreqGen:
+class SineGen:
     frequency: float
     sample_rate: int
     initial_volume: float = 1.0
 
     def __post_init__(self) -> None:
         logger.debug(
-            f"Initializing FreqGen(hz={self.frequency:.02f}, Fs={self.sample_rate})"
+            f"Initializing SineGen(hz={self.frequency:.02f}, Fs={self.sample_rate})"
         )
 
         signal = np.sin(
@@ -81,15 +81,15 @@ class FreqGen:
 
 
 @dataclass
-class MultiFreqGen:
+class MultiSineGen:
     freqs: Sequence[float]
     sample_rate: int = 48000
 
     def __post_init__(self) -> None:
-        logger.debug(f"Initializing MultiFreqGen(freqs={self.freqs})")
+        logger.debug(f"Initializing MultiSineGen(freqs={self.freqs})")
 
         self._signal_gens = [
-            FreqGen(freq, self.sample_rate, initial_volume=0.0) for freq in self.freqs
+            SineGen(freq, self.sample_rate, initial_volume=0.0) for freq in self.freqs
         ]
 
     def set_volumes(self, volumes: Iterable[float], backoff: float) -> None:

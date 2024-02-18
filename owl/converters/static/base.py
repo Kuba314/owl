@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from dataclasses import dataclass, field
 
-from owl.soundgen import MultiFreqGen
+from owl.soundgen import MultiSineGen
 from owl.types import Frame, Signal
 
 from ..base import BaseConverter
@@ -14,7 +14,7 @@ class ConstFreqConverter(BaseConverter):
     _cursor_position: tuple[int, int] = field(default=(0, 0), init=False)
 
     def __post_init__(self) -> None:
-        self._sound_gen = MultiFreqGen(freqs=self.frequencies)
+        self._sound_gen = MultiSineGen(freqs=self.frequencies)
 
     def on_new_frame(self, frame: Frame) -> None:
         volumes = self._extract_volumes(frame)
