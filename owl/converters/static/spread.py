@@ -8,7 +8,7 @@ from owl.events import notify
 from owl.types import Frame
 
 from ..utils import make_square
-from .base import SineConverter
+from .base import Sine, SineConverter
 
 
 class HilbertSpreadConverter(SineConverter):
@@ -21,12 +21,12 @@ class HilbertSpreadConverter(SineConverter):
         self._base_freq = base_freq
         self._order = order
 
-        all_freqs = itertools.chain.from_iterable(
+        self._all_freqs = list(itertools.chain.from_iterable(
             self.generate_frequency_groups(base_freq, order)
-        )
-        super().__init__(list(all_freqs))
+        ))
+        super().__init__(len(self._all_freqs))
 
-    def _extract_volumes(self, frame: Frame) -> list[float]:
+    def _extract_sines(self, frame: Frame) -> list[Sine]:
         frame = make_square(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
 
         volumes: list[float] = []
@@ -42,7 +42,7 @@ class HilbertSpreadConverter(SineConverter):
                 volumes.extend(resized_frame[point] / 255)
 
         notify("converter:outputs", frames)
-        return volumes
+        return [Sine(frequency=f, volume=v) for f, v in zip(self._all_freqs, volumes)]
 
     @staticmethod
     def generate_frequency_groups(
