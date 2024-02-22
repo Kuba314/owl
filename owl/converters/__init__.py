@@ -5,13 +5,13 @@ from .dynamic import (
     ScanConverter,
     VerticalScanConverter,
 )
-from .static import ConstFreqConverter, CurveConverter, HilbertSpreadConverter
+from .static import SineConverter, CurveConverter, HilbertSpreadConverter
 
 
 __all__ = [
     "BaseConverter",
     "CircularScanConverter",
-    "ConstFreqConverter",
+    "SineConverter",
     "CurveConverter",
     "ScanConverter",
     "HilbertSpreadConverter",

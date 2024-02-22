@@ -7,11 +7,11 @@ from owl.events import notify
 from owl.types import Frame
 
 from ..utils import make_square
-from .base import ConstFreqConverter
+from .base import SineConverter
 
 
 @dataclass
-class CurveConverter(ConstFreqConverter):
+class CurveConverter(SineConverter):
     curve: Curve
 
     def _extract_volumes(self, frame: Frame) -> list[float]:

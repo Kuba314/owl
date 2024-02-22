@@ -8,10 +8,10 @@ from owl.events import notify
 from owl.types import Frame
 
 from ..utils import make_square
-from .base import ConstFreqConverter
+from .base import SineConverter
 
 
-class HilbertSpreadConverter(ConstFreqConverter):
+class HilbertSpreadConverter(SineConverter):
     """
     Combine hilbert curves of N orders, each mapping pixels
     to more spread frequencies

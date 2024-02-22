@@ -1,10 +1,10 @@
-from .base import ConstFreqConverter
+from .base import SineConverter
 from .curve import CurveConverter
 from .spread import HilbertSpreadConverter
 
 
 __all__ = [
-    "ConstFreqConverter",
+    "SineConverter",
     "CurveConverter",
     "HilbertSpreadConverter",
 ]

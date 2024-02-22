@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from owl.soundgen import MultiSineGen
@@ -7,11 +8,9 @@ from owl.types import Frame, Signal
 from ..base import BaseConverter
 
 
-@dataclass
-class ConstFreqConverter(BaseConverter):
-    frequencies: list[float]
-
-    def __post_init__(self) -> None:
+class SineConverter(BaseConverter):
+    def __init__(self, initial_frequencies: Sequence[float]):
+        self.frequencies = tuple(initial_frequencies)
         self._sound_gen = MultiSineGen(freqs=self.frequencies)
 
     def on_new_frame(self, frame: Frame) -> None:
