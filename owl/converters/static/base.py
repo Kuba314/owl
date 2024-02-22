@@ -11,8 +11,6 @@ from ..base import BaseConverter
 class ConstFreqConverter(BaseConverter):
     frequencies: list[float]
 
-    _cursor_position: tuple[int, int] = field(default=(0, 0), init=False)
-
     def __post_init__(self) -> None:
         self._sound_gen = MultiSineGen(freqs=self.frequencies)
 
