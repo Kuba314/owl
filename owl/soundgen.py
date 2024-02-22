@@ -49,28 +49,37 @@ class Envelope:
 
 @dataclass
 class SineGen:
-    frequency: float
-    sample_rate: int
-    initial_volume: float = 1.0
+    def __init__(self, initial_frequency: float, sample_rate: int, initial_volume: float = 1.0):
+        self.sample_rate = sample_rate
 
-    def __post_init__(self) -> None:
+        self._frequency = initial_frequency
+        self._volume = initial_volume
+
         logger.debug(
-            f"Initializing SineGen(hz={self.frequency:.02f}, Fs={self.sample_rate})"
+            f"Initializing SineGen(hz={initial_frequency:.02f}, Fs={sample_rate})"
         )
 
-        signal = np.sin(
-            np.linspace(
-                0, 2 * np.pi, int(self.sample_rate / self.frequency), endpoint=False
-            )
-        )
-
-        self._freq_gen: Iterator[float] = itertools.cycle(signal)
-        self._vol_gen: Iterator[float] = itertools.repeat(self.initial_volume)
+        self._phase_gen: Iterator[float] = self._generate_phase_signal(initial_frequency, sample_rate)
+        self._vol_gen: Iterator[float] = itertools.repeat(initial_volume)
 
     def get_next_samples(self, count: int) -> npt.NDArray[np.float32]:
-        freqs = np.fromiter(self._freq_gen, float, count=count)
+        phases = np.fromiter(self._phase_gen, float, count=count)
         vols = np.fromiter(self._vol_gen, float, count=count)
-        return freqs * vols  # type: ignore (https://github.com/microsoft/pylance-release/discussions/2660)
+        return np.sin(phases) * vols  # type: ignore (https://github.com/microsoft/pylance-release/discussions/2660)
+
+    def set_frequency(self, frequency: float, backoff: float) -> None:
+        current_phase = next(self._phase_gen)
+
+        # inspired by https://stackoverflow.com/a/64971796
+        frequency_slope = 2 * np.pi * np.geomspace(self._frequency, frequency, int(backoff * self.sample_rate)) / self.sample_rate
+        sin_input = frequency_slope.cumsum()
+        end_phase = current_phase + sin_input[-1] % (2 * np.pi)
+        slope_iter = iter(current_phase + sin_input[:-1])
+
+        self._phase_gen = itertools.chain(
+            slope_iter, self._generate_phase_signal(frequency, self.sample_rate, phase=end_phase)
+        )
+        self._frequency = frequency
 
     def set_volume(self, volume: float, backoff: float) -> None:
         current_volume = next(self._vol_gen)
@@ -78,6 +87,11 @@ class SineGen:
             np.linspace(current_volume, volume, int(backoff * self.sample_rate))
         )
         self._vol_gen = itertools.chain(slope_iter, itertools.repeat(volume))
+
+    @classmethod
+    def _generate_phase_signal(cls, frequency: float, sample_rate: int, phase: float = 0.0) -> Iterator[float]:
+        space = np.linspace(0, 2 * np.pi, int(sample_rate / frequency), endpoint=False)
+        return itertools.cycle(phase + space)
 
 
 @dataclass
@@ -91,6 +105,10 @@ class MultiSineGen:
         self._signal_gens = [
             SineGen(freq, self.sample_rate, initial_volume=0.0) for freq in self.freqs
         ]
+
+    def set_frequencies(self, frequencies: Iterable[float], backoff: float) -> None:
+        for signal_gen, frequency in zip(self._signal_gens, frequencies):
+            signal_gen.set_frequency(frequency, backoff=backoff)
 
     def set_volumes(self, volumes: Iterable[float], backoff: float) -> None:
         for signal_gen, volume in zip(self._signal_gens, volumes):
