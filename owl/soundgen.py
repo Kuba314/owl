@@ -67,11 +67,11 @@ class SineGen:
         vols = np.fromiter(self._vol_gen, float, count=count)
         return np.sin(phases) * vols  # type: ignore (https://github.com/microsoft/pylance-release/discussions/2660)
 
-    def set_frequency(self, frequency: float, backoff: float) -> None:
+    def set_frequency(self, frequency: float, transient_duration: float) -> None:
         current_phase = next(self._phase_gen)
 
         # inspired by https://stackoverflow.com/a/64971796
-        frequency_slope = 2 * np.pi * np.geomspace(self._frequency, frequency, int(backoff * self.sample_rate)) / self.sample_rate
+        frequency_slope = 2 * np.pi * np.geomspace(self._frequency, frequency, int(transient_duration * self.sample_rate)) / self.sample_rate
         sin_input = frequency_slope.cumsum()
         end_phase = current_phase + sin_input[-1] % (2 * np.pi)
         slope_iter = iter(current_phase + sin_input[:-1])
@@ -81,10 +81,10 @@ class SineGen:
         )
         self._frequency = frequency
 
-    def set_volume(self, volume: float, backoff: float) -> None:
+    def set_volume(self, volume: float, transient_duration: float) -> None:
         current_volume = next(self._vol_gen)
         slope_iter = iter(
-            np.linspace(current_volume, volume, int(backoff * self.sample_rate))
+            np.linspace(current_volume, volume, int(transient_duration * self.sample_rate))
         )
         self._vol_gen = itertools.chain(slope_iter, itertools.repeat(volume))
 
@@ -106,13 +106,13 @@ class MultiSineGen:
             SineGen(freq, self.sample_rate, initial_volume=0.0) for freq in self.freqs
         ]
 
-    def set_frequencies(self, frequencies: Iterable[float], backoff: float) -> None:
+    def set_frequencies(self, frequencies: Iterable[float], transient_duration: float) -> None:
         for signal_gen, frequency in zip(self._signal_gens, frequencies):
-            signal_gen.set_frequency(frequency, backoff=backoff)
+            signal_gen.set_frequency(frequency, transient_duration=transient_duration)
 
-    def set_volumes(self, volumes: Iterable[float], backoff: float) -> None:
+    def set_volumes(self, volumes: Iterable[float], transient_duration: float) -> None:
         for signal_gen, volume in zip(self._signal_gens, volumes):
-            signal_gen.set_volume(volume, backoff=backoff)
+            signal_gen.set_volume(volume, transient_duration=transient_duration)
 
     def get_next_samples(self, count) -> Signal:
         signals = [gen.get_next_samples(count) for gen in self._signal_gens]

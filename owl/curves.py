@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import itertools
 from typing import Iterator, cast
 
 from hilbertcurve.hilbertcurve import HilbertCurve as HilbertCurveImpl
@@ -17,6 +18,12 @@ class Curve(ABC):
     @abstractmethod
     def generate(self) -> Iterator[tuple[int, int]]:
         ...
+
+    def index_of(self, pos: tuple[int, int]) -> int | None:
+        for i, cpos in enumerate(self.generate()):
+            if pos == cpos:
+                return i
+        return None
 
 
 class PeanoCurve(Curve):
@@ -60,7 +67,11 @@ class PeanoCurve(Curve):
         yield from _peano(self.order, 0, 0)
 
 
+@dataclass
 class HilbertCurve(Curve):
+    def __post_init__(self) -> None:
+        self._curve_impl = HilbertCurveImpl(p=self.order, n=2)
+
     @property
     def side_length(self) -> int:
         return 2**self.order
@@ -70,6 +81,8 @@ class HilbertCurve(Curve):
             yield (0, 0)
             return
 
-        curve = HilbertCurveImpl(p=self.order, n=2)
         for i in range(4**self.order):
-            yield cast(tuple[int, int], tuple(curve.point_from_distance(i)))
+            yield cast(tuple[int, int], tuple(self._curve_impl.point_from_distance(i)))
+
+    def index_of(self, pos: tuple[int, int]) -> int:
+        return self._curve_impl.distance_from_point(pos)

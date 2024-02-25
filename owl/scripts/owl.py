@@ -15,6 +15,7 @@ from owl.converters import (
     ScanConverter,
     VerticalScanConverter,
 )
+from owl.converters.static.shifters import ShiftersConverter
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.events import handle_events, handler
 from owl.soundgen import (
@@ -35,7 +36,6 @@ class CurveArgs:
             "hilbert": HilbertCurve,
             "peano": PeanoCurve,
         },
-        name_override="curve",
     )
     order: int = 1
 
@@ -47,13 +47,25 @@ class ScanArgs:
             "horizontal": HorizontalScanConverter,
             "circular": CircularScanConverter,
         },
-        name_override="scan_type",
     )
     strip_count: int = option("-c")
     freqs_per_strip: int = option("-n")
     ms_per_frame: int
 
     cue: bool
+
+
+class ShiftersArgs:
+    k: int = option(short_only=True)
+    intensity_levels: int = 16
+    transient_duration: float = 0.01
+    curve_cls: type[Curve] = dict_positional(
+        {
+            "hilbert": HilbertCurve,
+            "peano": PeanoCurve,
+        },
+    )
+    order: int = 1
 
 
 @arcparser
@@ -76,7 +88,7 @@ class Args:
     lowest_frequency: float = option("-lo", default=100)
     highest_frequency: float = option("-hi", default=800)
     sample_rate: int = option(default=48000)
-    converter: CurveArgs | ScanArgs = subparsers("curve", "scan")
+    converter: CurveArgs | ScanArgs | ShiftersArgs = subparsers("curve", "scan", "shifters")
 
 
 @handler("converter:frame:pre")
@@ -169,6 +181,16 @@ def instantiate_converter(parsed: Args.shape) -> BaseConverter:
             frequencies=scale.get_range(scan_args.freqs_per_strip),
             ms_per_frame=scan_args.ms_per_frame,
             sound_cue=generate_sound_cue(parsed.sample_rate) if scan_args.cue else None,
+            sample_rate=parsed.sample_rate,
+        )
+    elif isinstance(shifters_args := parsed.converter, ShiftersArgs):
+        curve = shifters_args.curve_cls(order=shifters_args.order)
+        return ShiftersConverter(
+            frequencies=scale.get_range(curve.side_length**2),
+            curve=curve,
+            count=shifters_args.k,
+            intensity_levels=shifters_args.intensity_levels,
+            transient_duration=shifters_args.transient_duration,
             sample_rate=parsed.sample_rate,
         )
     else:

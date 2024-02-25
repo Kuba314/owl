@@ -17,6 +17,7 @@ class Sine:
 @dataclass
 class SineConverter(BaseConverter):
     sine_count: int
+    transient_duration: float
 
     def __post_init__(self):
         self._sound_gen = MultiSineGen(freqs=[200 for _ in range(self.sine_count)])
@@ -24,8 +25,8 @@ class SineConverter(BaseConverter):
     def on_new_frame(self, frame: Frame) -> None:
         sines = self._extract_sines(frame)
         assert len(sines) == self.sine_count
-        self._sound_gen.set_frequencies((sine.frequency for sine in sines), backoff=0.01)
-        self._sound_gen.set_volumes((sine.volume for sine in sines), backoff=0.01)
+        self._sound_gen.set_frequencies((sine.frequency for sine in sines), transient_duration=self.transient_duration)
+        self._sound_gen.set_volumes((sine.volume for sine in sines), transient_duration=self.transient_duration)
 
     def get_next_samples(self, count: int) -> Signal:
         return self._sound_gen.get_next_samples(count)

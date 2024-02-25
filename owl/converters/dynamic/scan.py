@@ -43,7 +43,7 @@ class HorizontalScanConverter(ScanConverter):
         for i in range(self.strip_count):
             volumes = frame[:, i] / 255  # type: ignore
             logger.debug(f"strip[{i}] volumes: {volumes}")
-            self._sound_gen.set_volumes(volumes, backoff=0.01)
+            self._sound_gen.set_volumes(volumes, transient_duration=0.01)
             signal = np.concatenate(
                 [signal, self._sound_gen.get_next_samples(self._samples_per_strip)]
             )
@@ -63,7 +63,7 @@ class VerticalScanConverter(ScanConverter):
         for i in range(self.strip_count):
             volumes = frame[self.strip_count - i - 1] / 255
             logger.debug(f"strip[{i}] volumes: {volumes}")
-            self._sound_gen.set_volumes(volumes, backoff=0.01)
+            self._sound_gen.set_volumes(volumes, transient_duration=0.01)
             signal = np.concatenate(
                 [signal, self._sound_gen.get_next_samples(self._samples_per_strip)]
             )
@@ -93,7 +93,7 @@ class CircularScanConverter(ScanConverter):
             volumes = frame[ys, xs] / 255  # type: ignore
             logger.debug(f"strip[{i}] volumes: {volumes}")
 
-            self._sound_gen.set_volumes(volumes, backoff=0.01)
+            self._sound_gen.set_volumes(volumes, transient_duration=0.01)
             signal = np.concatenate(
                 [signal, self._sound_gen.get_next_samples(self._samples_per_strip)]
             )
