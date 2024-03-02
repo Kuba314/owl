@@ -18,11 +18,13 @@ from owl.converters import (
 from owl.converters.static.shifters import ShiftersConverter
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.events import handle_events, handler
+from owl.frequency_curve import FrequencyCurve
 from owl.soundgen import (
     BaseAudioOutputStream,
     Envelope,
     FileAudioOutputStream,
     LiveAudioOutputStream,
+    MultiSineGen,
 )
 from owl.types import Frame, Signal
 
@@ -31,6 +33,7 @@ logger = logging.getLogger("owl")
 
 
 class CurveArgs:
+    transient_duration: float = 0.01
     curve_cls: type[Curve] = dict_positional(
         {
             "hilbert": HilbertCurve,
@@ -170,9 +173,11 @@ def instantiate_converter(parsed: Args.shape) -> BaseConverter:
 
     if isinstance(curve_args := parsed.converter, CurveArgs):
         curve = curve_args.curve_cls(order=curve_args.order)
+        frequencies = scale.get_range(curve.side_length ** 2)
         return CurveConverter(
-            frequencies=scale.get_range(curve.side_length**2),
-            curve=curve,
+            frequency_curve=FrequencyCurve(curve, frequencies),
+            sine_gen=MultiSineGen(frequencies),
+            transient_duration=curve_args.transient_duration,
             sample_rate=parsed.sample_rate,
         )
     elif isinstance(scan_args := parsed.converter, ScanArgs):
@@ -186,9 +191,8 @@ def instantiate_converter(parsed: Args.shape) -> BaseConverter:
     elif isinstance(shifters_args := parsed.converter, ShiftersArgs):
         curve = shifters_args.curve_cls(order=shifters_args.order)
         return ShiftersConverter(
-            frequencies=scale.get_range(curve.side_length**2),
-            curve=curve,
-            count=shifters_args.k,
+            frequency_curve=FrequencyCurve.from_scale(curve, scale),
+            sine_gen=MultiSineGen.blank(count=shifters_args.k),
             intensity_levels=shifters_args.intensity_levels,
             transient_duration=shifters_args.transient_duration,
             sample_rate=parsed.sample_rate,

@@ -17,14 +17,14 @@ class HilbertSpreadConverter(SineConverter):
     to more spread frequencies
     """
 
-    def __init__(self, base_freq: float, order: int):
+    def __init__(self, base_freq: float, order: int, transient_duration: float):
         self._base_freq = base_freq
         self._order = order
 
         self._all_freqs = list(itertools.chain.from_iterable(
             self.generate_frequency_groups(base_freq, order)
         ))
-        super().__init__(len(self._all_freqs))
+        super().__init__(len(self._all_freqs), transient_duration=transient_duration)
 
     def _extract_sines(self, frame: Frame) -> list[Sine]:
         frame = make_square(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))

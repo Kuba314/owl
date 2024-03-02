@@ -5,7 +5,12 @@ from .dynamic import (
     ScanConverter,
     VerticalScanConverter,
 )
-from .static import SineConverter, CurveConverter, HilbertSpreadConverter, ShiftersConverter
+from .static import (
+    CurveConverter,
+    HilbertSpreadConverter,
+    ShiftersConverter,
+    SineConverter,
+)
 
 
 __all__ = [

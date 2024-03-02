@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import itertools
 from typing import Iterator, cast
 
 from hilbertcurve.hilbertcurve import HilbertCurve as HilbertCurveImpl

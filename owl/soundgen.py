@@ -3,6 +3,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
 from threading import Thread
+from typing import Self
 import itertools
 import logging
 import time
@@ -71,10 +72,14 @@ class SineGen:
         current_phase = next(self._phase_gen)
 
         # inspired by https://stackoverflow.com/a/64971796
-        frequency_slope = 2 * np.pi * np.geomspace(self._frequency, frequency, int(transient_duration * self.sample_rate)) / self.sample_rate
-        sin_input = frequency_slope.cumsum()
-        end_phase = current_phase + sin_input[-1] % (2 * np.pi)
-        slope_iter = iter(current_phase + sin_input[:-1])
+        if transient_duration > 0:
+            frequency_slope = 2 * np.pi * np.geomspace(self._frequency, frequency, int(transient_duration * self.sample_rate)) / self.sample_rate
+            sin_input = frequency_slope.cumsum()
+            end_phase = current_phase + sin_input[-1] % (2 * np.pi)
+            slope_iter = iter(current_phase + sin_input[:-1])
+        else:
+            end_phase = current_phase
+            slope_iter = iter(())
 
         self._phase_gen = itertools.chain(
             slope_iter, self._generate_phase_signal(frequency, self.sample_rate, phase=end_phase)
@@ -117,6 +122,10 @@ class MultiSineGen:
     def get_next_samples(self, count) -> Signal:
         signals = [gen.get_next_samples(count) for gen in self._signal_gens]
         return np.sum(signals, axis=0) / len(self._signal_gens)
+
+    @classmethod
+    def blank(cls, count: int, sample_rate: int = 48000) -> Self:
+        return cls(freqs=[440] * count, sample_rate=sample_rate)
 
 
 @dataclass(kw_only=True)
