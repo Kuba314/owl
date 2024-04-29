@@ -1,8 +1,19 @@
 [tool.poetry]
 name = "owl-framework"
-version = "0.1.0"
-description = ""
+version = "0.1.1"
+description = "Extensible framework for comparing methods of converting video to audio"
+license = "MIT"
 authors = ["Jakub Rozek <jakub.rozek314@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/Kuba314/owl"
+keywords = ["conversion", "blindness", "visual-aid", "video-to-audio"]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Conversion",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Typing :: Typed",
+]
 packages = [
     { include = "owl" },
 ]
