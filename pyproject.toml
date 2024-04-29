@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "owl"
+name = "owl-framework"
 version = "0.1.0"
 description = ""
 authors = ["Jakub Rozek <jakub.rozek314@gmail.com>"]
