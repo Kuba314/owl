@@ -3,7 +3,8 @@ import numpy as np
 import numpy.typing as npt
 
 
-Frame = MatLike
+# Frame = MatLike
+Frame = npt.NDArray[np.uint8]
 Signal = npt.NDArray[np.float32]
 
 __all__ = [

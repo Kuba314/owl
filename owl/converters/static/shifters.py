@@ -7,24 +7,24 @@ from owl.events import notify
 from owl.frequency_curve import FrequencyCurve
 from owl.types import Frame
 
-from ..utils import make_square
+from ..utils import grayscale, make_square, median_threshold, square_resize
 from .base import Sine, SineConverter
 
 
 def kmeans(
     frame: Frame,
     k: int,
-    intensity_levels: int,
+    # intensity_levels: int,
     attempts: int = 5,
     count_criterion: int | None = 50,
     eps_criterion: float | None = 0.1,
 ) -> dict[tuple[float, float], float]:
     # weighted k-means
-    weight_multiplier = intensity_levels / 256
-    data: list[tuple[int, int]] = []
-    for y, row in enumerate(frame):
-        for x, v in enumerate(row):
-            data.extend((x, y) for _ in range(int(v * weight_multiplier)))
+    # weight_multiplier = intensity_levels / 256
+    data: list[tuple[int, int]] = [(x, y) for y, row in enumerate(frame) for x, v in enumerate(row)]
+    # for y, row in enumerate(frame):
+    #     for x, v in enumerate(row):
+    #         data.extend((x, y) for _ in range(int(v * weight_multiplier)))
 
     if not data:
         return {}
@@ -62,16 +62,20 @@ class ShiftersConverter(SineConverter):
 
     def _extract_sines(self, frame: Frame) -> list[Sine]:
         side_length = self.frequency_curve.side_length
-        frame = make_square(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
-        resized_frame = cv2.resize(frame, (side_length, side_length), interpolation=cv2.INTER_AREA)
+        frame = make_square(frame)
+        original_size_length = frame.shape[0]
+        frame = square_resize(frame, side_length)
+        frame = grayscale(frame)
+        notify("converter:frame:pre", square_resize(frame, original_size_length))
+        frame = median_threshold(frame)
 
         # TODO: threshold wiht 50% (80%?), then extract islands and map their size to volume
-        center_weights = kmeans(resized_frame, self.sine_count, intensity_levels=self.intensity_levels)
+        center_weights = kmeans(frame, self.sine_count)
         for center, weight in center_weights.items():
             cv2.circle(frame, list(map(lambda x: int(x/side_length*frame.shape[0]), center)), int(weight**2 * 50), color=(0, 0, 0))
-        notify("converter:frame:pre", frame)
+        notify("converter:frame:post", square_resize(frame, original_size_length))
 
-        sines = []
+        sines: list[Sine] = []
         for (x, y), weight in center_weights.items():
             point = (int(x), int(y))
 
@@ -80,4 +84,5 @@ class ShiftersConverter(SineConverter):
                 raise Exception(f"k-means: Point {point} out of curve bounds ({side_length})")
             sines.append(Sine(frequency, volume=weight**2))
 
+        sines.sort(key=lambda x: x.frequency)
         return sines
