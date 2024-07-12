@@ -1,10 +1,11 @@
 import logging
+from typing import ClassVar
 
 
 def init_logging() -> None:
     # edited version of https://stackoverflow.com/a/56944256/8844422
     class ColoredLevelnameFormatter(logging.Formatter):
-        COLORS = {
+        COLORS: ClassVar = {
             logging.DEBUG: "\x1b[30m",
             logging.INFO: "\x1b[1;34m",
             logging.WARNING: "\x1b[1;33m",
@@ -14,7 +15,7 @@ def init_logging() -> None:
 
         def format(self, record):
             color = self.COLORS.get(record.levelno)
-            fmt = f"{{asctime}} {{name:14}} {color}{{levelname:10}}\033[0m {{message}}"
+            fmt = f"{{asctime}} {{name:20}} {color}{{levelname:10}}\033[0m {{message}}"
             formatter = logging.Formatter(fmt, style="{")
             return formatter.format(record)
 

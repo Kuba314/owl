@@ -1,4 +1,4 @@
-from .base import BaseConverter
+from .converter import BaseConverter
 
 
 class BaseFocusConverter(BaseConverter):

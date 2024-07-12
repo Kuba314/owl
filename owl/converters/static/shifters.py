@@ -72,7 +72,7 @@ class ShiftersConverter(SineConverter):
         # TODO: threshold wiht 50% (80%?), then extract islands and map their size to volume
         center_weights = kmeans(frame, self.sine_count)
         for center, weight in center_weights.items():
-            cv2.circle(frame, list(map(lambda x: int(x/side_length*frame.shape[0]), center)), int(weight**2 * 50), color=(0, 0, 0))
+            cv2.circle(frame, [int(x/side_length*frame.shape[0]) for x in center], int(weight**2 * 50), color=(0, 0, 0))
         notify("converter:frame:post", square_resize(frame, original_size_length))
 
         sines: list[Sine] = []

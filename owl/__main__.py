@@ -1,6 +1,6 @@
-from collections.abc import Callable
 import logging
 import time
+from typing import cast
 
 from arcparse import arcparser, dict_option, dict_positional, option, subparsers
 import cv2
@@ -13,20 +13,15 @@ from owl.converters import (
     CurveConverter,
     HorizontalScanConverter,
     ScanConverter,
+    ShiftersConverter,
     VerticalScanConverter,
 )
-from owl.converters.static.shifters import ShiftersConverter
 from owl.curves import Curve, HilbertCurve, PeanoCurve
 from owl.events import handle_events, handler
 from owl.frequency_curve import FrequencyCurve
 from owl.logging import init_logging
-from owl.soundgen import (
-    BaseAudioOutputStream,
-    Envelope,
-    FileAudioOutputStream,
-    LiveAudioOutputStream,
-    MultiSineGen,
-)
+from owl.output_stream import AudioOutputStream, FileAudioOutputStream, LiveAudioOutputStream
+from owl.soundgen import Envelope, MultiSineGen
 from owl.types import Frame, Signal
 
 
@@ -76,8 +71,8 @@ class ShiftersArgs:
 class Args:
     input: str = option(
         "-i",
-        default="camera:0",
-        help='input source, use "camera:<index>" or "file:<filename>" (default: "camera:0")',
+        default=":0",
+        help='input source, use ":<index>" for camera or "<filename>" (default: ":0")',
     )
     output: str | None = option("-o")
 
@@ -125,23 +120,13 @@ def generate_sound_cue(sample_rate: int) -> Signal:
         * sound_cue_volume
     )
     envelope = Envelope(0.003, 0.0005, 0.0005, 0.8)
-    sound_cue = envelope.apply(sound_cue, sample_rate)
-    return sound_cue
+    return envelope.apply(sound_cue, sample_rate)
 
 
 def open_capture(input: str) -> cv2.VideoCapture:
-    if ":" not in input:
-        raise ValueError('Expected "<method>:<spec>" as input param')
-
-    match input.split(":", 1):
-        case "camera", index:
-            return cv2.VideoCapture(int(index))
-        case "file", filename:
-            return cv2.VideoCapture(filename)
-        case method, _:
-            raise ValueError(f'Invalid input method "{method}"')
-        case _:
-            assert False, "unreachable"
+    if input.startswith(":"):
+        return cv2.VideoCapture(int(input[1:]))
+    return cv2.VideoCapture(input)
 
 
 def instantiate_converter(parsed: Args.shape) -> BaseConverter:
@@ -174,45 +159,37 @@ def instantiate_converter(parsed: Args.shape) -> BaseConverter:
             sample_rate=parsed.sample_rate,
         )
     else:
-        assert False, "unreachable"
+        raise AssertionError("unreachable")
 
 
-def instantiate_output_stream(
-    parsed: Args.shape,
-    request_next_samples: Callable[[int], Signal],
-) -> BaseAudioOutputStream:
-    if parsed.output is not None:
-        return FileAudioOutputStream(
-            filename=parsed.output,
-            next_samples_callback=request_next_samples,
-            sample_rate=parsed.sample_rate,
-        )
-    else:
-        return LiveAudioOutputStream(
-            next_samples_callback=request_next_samples,
-            sample_rate=parsed.sample_rate,
-        )
+def instantiate_output_stream(output_filename: str | None, sample_rate: int) -> AudioOutputStream:
+    if output_filename is not None:
+        return FileAudioOutputStream(filename=output_filename, sample_rate=sample_rate)
+    return LiveAudioOutputStream(sample_rate=sample_rate)
 
 
-def main_loop(cap: cv2.VideoCapture, converter: BaseConverter) -> None:
+def main_loop(cap: cv2.VideoCapture, converter: BaseConverter, output_stream: AudioOutputStream) -> None:
     fps = cap.get(cv2.CAP_PROP_FPS)
     last_frame = time.time() * 1000
 
+    delta = 1000 / fps
     while cap.isOpened():
         # wait for next frame
-        while 1000 * time.time() - last_frame < 1000 / fps:
+        while 1000 * time.time() - last_frame < delta:
             time.sleep(0.01)
 
-        # read frame from capture
+        last_frame += delta
+
         success, frame = cap.read()
         if not success:
-            logger.error("Couldn't read from capture")
+            logger.error("couldn't read from capture")
             break
 
-        last_frame += 1000 / fps
-        converter.on_new_frame(frame)
-        handle_events()
+        converter.update(cast(Frame, frame))
+        audio_samples = converter.get_samples(int(delta * converter.sample_rate / 1000))
+        output_stream.write(audio_samples)
 
+        handle_events()
         key_press = cv2.waitKey(delay=1)
         if key_press == ord("q"):
             break
@@ -220,18 +197,18 @@ def main_loop(cap: cv2.VideoCapture, converter: BaseConverter) -> None:
 
 def main() -> None:
     init_logging()
-    parsed = Args.parse()
+    args = Args.parse()
 
-    cap = open_capture(parsed.input)
+    cap = open_capture(args.input)
     if not cap.isOpened():
-        raise Exception("Failed to open cv2 capture")
+        raise Exception("failed to open cv2 capture")
 
-    converter = instantiate_converter(parsed)
-    output_stream = instantiate_output_stream(parsed, converter.get_next_samples)
+    output_stream = instantiate_output_stream(args.output, args.sample_rate)
+    converter = instantiate_converter(args)
 
     output_stream.open()
     try:
-        main_loop(cap, converter)
+        main_loop(cap, converter, output_stream)
     except KeyboardInterrupt:
         pass
     finally:

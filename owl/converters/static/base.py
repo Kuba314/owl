@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from owl.soundgen import MultiSineGen
 from owl.types import Frame, Signal
 
-from ..base import BaseConverter
+from ..converter import BaseConverter
 
 
 @dataclass
@@ -25,7 +25,7 @@ class SineConverter(BaseConverter):
     def sine_count(self) -> int:
         return len(self.sine_gen.freqs)
 
-    def on_new_frame(self, frame: Frame) -> None:
+    def update(self, frame: Frame) -> None:
         sines = self._extract_sines(frame)
         assert len(sines) == len(self.sine_gen.freqs)
 
@@ -34,7 +34,7 @@ class SineConverter(BaseConverter):
         self.sine_gen.set_frequencies((sine.frequency for sine in sines), transient_duration=transient_duration)
         self.sine_gen.set_volumes((sine.volume for sine in sines), transient_duration=transient_duration)
 
-    def get_next_samples(self, count: int) -> Signal:
+    def get_samples(self, count: int) -> Signal:
         return self.sine_gen.get_next_samples(count)
 
     @abstractmethod

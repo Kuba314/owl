@@ -9,9 +9,9 @@ class BaseConverter(ABC):
     sample_rate: int = field(default=48000, kw_only=True)
 
     @abstractmethod
-    def on_new_frame(self, frame: Frame) -> None:
+    def update(self, frame: Frame) -> None:
         ...
 
     @abstractmethod
-    def get_next_samples(self, count: int) -> Signal:
+    def get_samples(self, count: int) -> Signal:
         ...

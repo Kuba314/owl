@@ -1,4 +1,4 @@
-from .base import BaseConverter
+from .converter import BaseConverter
 from .dynamic import (
     CircularScanConverter,
     HorizontalScanConverter,

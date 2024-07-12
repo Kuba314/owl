@@ -7,7 +7,7 @@ from owl.types import Frame
 
 
 def grayscale(frame: Frame) -> Frame:
-    return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # type: ignore
+    return cast(Frame, cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
 
 
 def make_square(frame: Frame) -> Frame:
@@ -28,7 +28,6 @@ def make_square(frame: Frame) -> Frame:
 
 
 def median_threshold(frame: Frame) -> Frame:
-    assert len(frame.shape) == 2
     median = np.median(frame)
     return np.where(
         frame > median,
@@ -38,8 +37,9 @@ def median_threshold(frame: Frame) -> Frame:
 
 
 def square_resize(frame: Frame, side_length: int) -> Frame:
-    return cv2.resize(
+    resized_frame = cv2.resize(
         frame,
         (side_length, side_length),
         interpolation=cv2.INTER_AREA,
-    )  # type: ignore
+    )
+    return cast(Frame, resized_frame)

@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from collections import deque
 from dataclasses import dataclass, field
 import logging
 
@@ -8,10 +7,10 @@ import numpy as np
 from owl.soundgen import Envelope
 from owl.types import Frame, Signal
 
-from ..base import BaseConverter
+from ..converter import BaseConverter
 
 
-logger = logging.getLogger("converter")
+logger = logging.getLogger("dynamic_converter")
 
 
 @dataclass(kw_only=True)
@@ -22,7 +21,7 @@ class DynamicConverter(BaseConverter):
     sound_cue: Signal | None = None
     ms_between_new_frames: float = 1000 / 30  # 30 FPS is a reasonable assumption
 
-    _audio_samples_queue: deque[float] = field(default_factory=deque, init=False)
+    _audio_samples_queue: list[float] = field(default_factory=list, init=False)
 
     def __post_init__(self) -> None:
         self._sound_cue_duration_ms = (
@@ -35,7 +34,7 @@ class DynamicConverter(BaseConverter):
     def convert_frame(self, frame: Frame) -> Signal:
         ...
 
-    def on_new_frame(self, frame: Frame) -> None:
+    def update(self, frame: Frame) -> None:
         # do nothing if we can afford to wait for the next frame
         # three video frames should be enough time for new frame to be inserted into deque
         if (
@@ -50,26 +49,20 @@ class DynamicConverter(BaseConverter):
             self._audio_samples_queue.extend(self.sound_cue)
 
         queue_ms_left = 1000 * len(self._audio_samples_queue) / self.sample_rate
-        logger.debug(f"Converting new video frame with {queue_ms_left:.0f}ms to spare")
+        logger.debug(f"converting new video frame with {queue_ms_left:.0f}ms to spare")
 
         signal = self.convert_frame(frame)
         env = Envelope(0.005, 0.001, 0.001, 0.8)
         signal = env.apply(signal, sample_rate=self.sample_rate)
         self._audio_samples_queue.extend(signal)
 
-    def get_next_samples(self, count: int) -> Signal:
-        underflowed = 0
+    def get_samples(self, count: int) -> Signal:
+        if len(self._audio_samples_queue) < count:
+            logging.warning(f"underflow by {count - len(self._audio_samples_queue)} samples")
+            signal = np.pad(self._audio_samples_queue, count, mode="constant", constant_values=0)
+            self._audio_samples_queue.clear()
+        else:
+            signal = np.array(self._audio_samples_queue[:count])
+            self._audio_samples_queue = self._audio_samples_queue[count:]
 
-        def popleft_or(deq: deque, default=None):
-            nonlocal underflowed
-            if not len(deq):
-                underflowed += 1
-                return default
-            return deq.popleft()
-
-        signal = np.array(
-            [popleft_or(self._audio_samples_queue, 0.0) for _ in range(count)]
-        )
-        if underflowed:
-            logging.warning(f"Audio underflowed for {underflowed} samples")
         return signal
