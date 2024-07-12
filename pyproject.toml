@@ -27,7 +27,7 @@ pyaudio = "^0.2.13"
 arcparse = "^0.6.0"
 
 [tool.poetry.scripts]
-owl = "owl.scripts.owl:main"
+owl = "owl.__main__:main"
 
 [tool.poetry.group.dev]
 optional = true
