@@ -28,6 +28,7 @@ arcparse = "^0.6.0"
 
 [tool.poetry.scripts]
 owl = "owl.__main__:main"
+owl-gui = "owl.gui.__main__:main"
 
 [tool.poetry.group.dev]
 optional = true
@@ -37,6 +38,10 @@ types-pyaudio = "^0.2.16.5"
 pyright = "^1.1.343"
 ruff = "^0.1.9"
 isort = "^5.13.2"
+
+
+[tool.poetry.group.gui.dependencies]
+pyqt6 = "^6.7.1"
 
 [[tool.mypy.overrides]]
 module = ["cv2.*", "hilbertcurve.*", "numpy"]
