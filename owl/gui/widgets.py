@@ -8,38 +8,33 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-
-class CurveConverterOptions(QWidget):
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("curve option 1"))
-        layout.addWidget(QLabel("curve option 2"))
-        self.setLayout(layout)
-
-
-class DynamicConverterOptions(QWidget):
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("dynamic option 1"))
-        layout.addWidget(QLabel("dynamic option 2"))
-        self.setLayout(layout)
+from .options_widgets import (
+    CommonConverterOptions,
+    CurveConverterOptions,
+    ScanConverterOptions,
+    ShiftersConverterOptions,
+)
+from .view_models import ConverterViewModel
 
 
 class SidePanel(QWidget):
-    def __init__(self):
+    def __init__(self, view_model: ConverterViewModel):
         super().__init__()
+        self._view_model = view_model
 
         self._converter_options_widgets = [
-            ("curve", CurveConverterOptions()),
-            ("dynamic", DynamicConverterOptions()),
+            ("curve", CurveConverterOptions(view_model)),
+            ("scan", ScanConverterOptions(view_model)),
+            ("shifters", ShiftersConverterOptions(view_model)),
         ]
 
+        # initialize common converter options
+        self._converter_common_options = CommonConverterOptions(view_model)
+
         # initialize stack
-        self._options_stack = QStackedWidget()
+        self._converter_specific_options_stack = QStackedWidget()
         for _, options_widget in self._converter_options_widgets:
-            self._options_stack.addWidget(options_widget)
+            self._converter_specific_options_stack.addWidget(options_widget)
 
         # initialize combo box
         self._converter_select = QComboBox()
@@ -48,35 +43,41 @@ class SidePanel(QWidget):
 
         # connect and emit select signal
         self._converter_select.currentIndexChanged.connect(
-            lambda index: self._options_stack.setCurrentIndex(index)
+            lambda index: self._converter_specific_options_stack.setCurrentIndex(index)
+        )
+        self._converter_select.currentIndexChanged.connect(
+            lambda index: self._converter_options_widgets[index][1].selected.emit()
         )
         self._converter_select.currentIndexChanged.emit(0)
 
         layout = QVBoxLayout()
         layout.addWidget(self._converter_select)
-        layout.addWidget(self._options_stack)
+        layout.addWidget(self._converter_common_options)
+        layout.addWidget(self._converter_specific_options_stack)
         self.setLayout(layout)
 
 
 class MainGrid(QWidget):
-    def __init__(self):
+    def __init__(self, view_model: ConverterViewModel):
         super().__init__()
 
         layout = QGridLayout()
         layout.addWidget(QLabel("main grid 1"), 0, 0)
         layout.addWidget(QLabel("main grid 2"), 0, 1)
-        layout.addWidget(QLabel("main grid 3"), 1, 0)
-        layout.addWidget(QLabel("main grid 4"), 1, 1)
+        layout.addWidget(QLabel("main grid 3"), 1, 0, 1, 2)
 
         self.setLayout(layout)
 
 
 class CentralWidget(QWidget):
-    def __init__(self):
+    def __init__(self, view_model: ConverterViewModel):
         super().__init__()
 
+        side_panel = SidePanel(view_model)
+        side_panel.setMaximumWidth(300)
+
         layout = QHBoxLayout()
-        layout.addWidget(SidePanel())
-        layout.addWidget(MainGrid())
+        layout.addWidget(side_panel)
+        layout.addWidget(MainGrid(view_model))
 
         self.setLayout(layout)
