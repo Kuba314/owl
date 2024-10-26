@@ -1,11 +1,13 @@
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QImage, QPixmap, QResizeEvent
 from PyQt6.QtWidgets import (
     QComboBox,
-    QGridLayout,
+    QFrame,
     QHBoxLayout,
     QLabel,
+    QSplitter,
     QStackedWidget,
     QVBoxLayout,
-    QWidget,
 )
 
 from .options_widgets import (
@@ -16,11 +18,18 @@ from .options_widgets import (
 )
 from .view_models import ConverterViewModel
 
+FOREGROUND_COLOR = "#faa"
+BACKGROUND_COLOR = "#050"
 
-class SidePanel(QWidget):
+
+class SidePanel(QFrame):
     def __init__(self, view_model: ConverterViewModel):
         super().__init__()
         self._view_model = view_model
+        self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
+        self.setLineWidth(3)
+
+        self.setStyleSheet(f"background-color: {FOREGROUND_COLOR}")
 
         self._converter_options_widgets = [
             ("curve", CurveConverterOptions(view_model)),
@@ -30,6 +39,9 @@ class SidePanel(QWidget):
 
         # initialize common converter options
         self._converter_common_options = CommonConverterOptions(view_model)
+        self._converter_common_options.setStyleSheet(
+            f"background-color: {FOREGROUND_COLOR}"
+        )
 
         # initialize stack
         self._converter_specific_options_stack = QStackedWidget()
@@ -57,27 +69,58 @@ class SidePanel(QWidget):
         self.setLayout(layout)
 
 
-class MainGrid(QWidget):
+class MaxContentPixmapLabel(QLabel):
+    def __init__(self, pixmap: QPixmap, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._pixmap = pixmap
+        self.setPixmap(pixmap)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        new_pixmap = self._pixmap.scaled(
+            self.size(),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self.setPixmap(new_pixmap)
+        return super().resizeEvent(event)
+
+
+class MainGrid(QFrame):
     def __init__(self, view_model: ConverterViewModel):
         super().__init__()
+        self.setStyleSheet(f"background-color: {FOREGROUND_COLOR}")
+        self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
+        self.setLineWidth(3)
 
-        layout = QGridLayout()
-        layout.addWidget(QLabel("main grid 1"), 0, 0)
-        layout.addWidget(QLabel("main grid 2"), 0, 1)
-        layout.addWidget(QLabel("main grid 3"), 1, 0, 1, 2)
+        layout = QVBoxLayout()
+        input_layout = QHBoxLayout()
+        output_layout = QHBoxLayout()
+        layout.addLayout(input_layout)
+        layout.addLayout(output_layout)
+
+        cam_pixmap = QPixmap.fromImage(QImage("image.png"))
+        cam_view = MaxContentPixmapLabel(cam_pixmap)
+        converter_view = MaxContentPixmapLabel(cam_pixmap)
+        input_layout.addWidget(cam_view)
+        input_layout.addWidget(converter_view)
+
+        spectrogram = QLabel("spectrogram")
+        spectrogram.setStyleSheet("border: 1px solid red")
+        output_layout.addWidget(spectrogram)
 
         self.setLayout(layout)
 
 
-class CentralWidget(QWidget):
+class CentralWidget(QSplitter):
     def __init__(self, view_model: ConverterViewModel):
         super().__init__()
+        self.setStyleSheet(f"background-color: {BACKGROUND_COLOR}")
+        self.setHandleWidth(15)
 
         side_panel = SidePanel(view_model)
-        side_panel.setMaximumWidth(300)
+        side_panel.setMinimumWidth(150)
+        side_panel.setMaximumWidth(400)
 
-        layout = QHBoxLayout()
-        layout.addWidget(side_panel)
-        layout.addWidget(MainGrid(view_model))
-
-        self.setLayout(layout)
+        self.addWidget(side_panel)
+        self.addWidget(MainGrid(view_model))
