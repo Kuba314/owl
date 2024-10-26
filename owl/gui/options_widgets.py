@@ -103,6 +103,7 @@ class CurveConverterOptions(QWidget):
         layout.addWidget(QLabel("transient duration"))
         layout.addWidget(self._transient_duration)
 
+        layout.addStretch()
         self.setLayout(layout)
 
 
@@ -155,6 +156,7 @@ class ScanConverterOptions(QWidget):
         layout.addWidget(QLabel("transient duration"))
         layout.addWidget(self._transient_duration)
 
+        layout.addStretch()
         self.setLayout(layout)
 
 
@@ -209,4 +211,5 @@ class ShiftersConverterOptions(QWidget):
         layout.addWidget(QLabel("curve order"))
         layout.addWidget(self._curve_order)
 
+        layout.addStretch()
         self.setLayout(layout)
