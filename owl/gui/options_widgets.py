@@ -179,7 +179,7 @@ class ShiftersConverterOptions(QWidget):
         layout.addWidget(QLabel("intensity levels"))
         layout.addWidget(self._intensity_levels)
 
-        self._point_count = QLineEdit(str(view_model.model.k))
+        self._point_count = QLineEdit(str(view_model.model.point_count))
         self._point_count.setValidator(QIntValidator(2, 32))
         on_valid_input(
             self._point_count,
