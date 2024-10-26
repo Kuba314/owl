@@ -17,6 +17,7 @@ class Application(QApplication):
 
         self._window = QMainWindow()
         self._window.setCentralWidget(view)
+        self._window.resize(1150, 750)
         self._window.show()
 
 
