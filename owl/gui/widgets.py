@@ -78,6 +78,14 @@ class MaxContentPixmapLabel(QLabel):
         self.setPixmap(pixmap)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+    def setPixmap(self, pixmap: QPixmap) -> None:
+        new_pixmap = self._pixmap.scaled(
+            self.size(),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.FastTransformation,
+        )
+        super().setPixmap(new_pixmap)
+
     def resizeEvent(self, event: QResizeEvent) -> None:
         new_pixmap = self._pixmap.scaled(
             self.size(),
@@ -91,6 +99,7 @@ class MaxContentPixmapLabel(QLabel):
         height, width = frame.shape
         image = QImage(frame.data, width, height, QImage.Format.Format_Grayscale8)
         self._pixmap = QPixmap.fromImage(image)
+        self.setPixmap(self._pixmap)
 
 
 class MainGrid(QFrame):

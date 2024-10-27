@@ -17,7 +17,6 @@ from owl.converters import (
     VerticalScanConverter,
 )
 from owl.curves import Curve, HilbertCurve, PeanoCurve
-from owl.events import handle_events, handler
 from owl.frequency_curve import FrequencyCurve
 from owl.logging import init_logging
 from owl.output_stream import AudioOutputStream, FileAudioOutputStream, LiveAudioOutputStream
@@ -88,22 +87,6 @@ class Args:
     highest_frequency: float = option("-hi", default=800)
     sample_rate: int = option(default=48000)
     converter: CurveArgs | ScanArgs | ShiftersArgs = subparsers("curve", "scan", "shifters")
-
-
-@handler("converter:frame:pre")
-def handle_converter_frame_pre(frame: Frame) -> None:
-    cv2.imshow("Converter frame pre", frame)
-
-
-@handler("converter:frame:post")
-def handle_converter_output(frame: Frame) -> None:
-    cv2.imshow("Converter frame post", frame)
-
-
-@handler("converter:outputs")
-def handle_converter_outputs(frames: list[Frame]) -> None:
-    for i, frame in enumerate(frames, 1):
-        cv2.imshow(f"Converter output {i}", frame)
 
 
 def generate_sound_cue(sample_rate: int) -> Signal:
@@ -189,7 +172,6 @@ def main_loop(cap: cv2.VideoCapture, converter: BaseConverter, output_stream: Au
         audio_samples = converter.get_samples(int(delta * converter.sample_rate / 1000))
         output_stream.write(audio_samples)
 
-        handle_events()
         key_press = cv2.waitKey(delay=1)
         if key_press == ord("q"):
             break
@@ -205,6 +187,8 @@ def main() -> None:
 
     output_stream = instantiate_output_stream(args.output, args.sample_rate)
     converter = instantiate_converter(args)
+    converter.on("new-input-frame", lambda frame: cv2.imshow("Converter frame pre", frame))
+    converter.on("new-converter-frame", lambda frame: cv2.imshow("Converter frame post", frame))
 
     output_stream.open()
     try:

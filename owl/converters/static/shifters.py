@@ -3,7 +3,6 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from owl.events import notify
 from owl.frequency_curve import FrequencyCurve
 from owl.types import Frame
 
@@ -66,14 +65,14 @@ class ShiftersConverter(SineConverter):
         original_size_length = frame.shape[0]
         frame = square_resize(frame, side_length)
         frame = grayscale(frame)
-        notify("converter:frame:pre", square_resize(frame, original_size_length))
+        self.emit("new-input-frame", square_resize(frame, original_size_length))
         frame = median_threshold(frame)
 
         # TODO: threshold wiht 50% (80%?), then extract islands and map their size to volume
         center_weights = kmeans(frame, self.sine_count)
         for center, weight in center_weights.items():
             cv2.circle(frame, [int(x/side_length*frame.shape[0]) for x in center], int(weight**2 * 50), color=(0, 0, 0))
-        notify("converter:frame:post", square_resize(frame, original_size_length))
+        self.emit("new-converter-frame", square_resize(frame, original_size_length))
 
         sines: list[Sine] = []
         for (x, y), weight in center_weights.items():

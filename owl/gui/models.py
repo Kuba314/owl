@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from owl.audio_scale import AudioScale, MelScale
 from owl.converters import (
@@ -32,6 +33,8 @@ class ConverterModel:
 
     intensity_levels: int = 4
     point_count: int = 4
+
+    input_source: Path | int | None = None
 
     def construct_converter(self) -> BaseConverter:
         audio_scale = self.construct_audio_scale()

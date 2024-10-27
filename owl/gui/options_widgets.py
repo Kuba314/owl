@@ -1,8 +1,18 @@
 from collections.abc import Callable
+from pathlib import Path
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QDoubleValidator, QIntValidator
-from PyQt6.QtWidgets import QComboBox, QLabel, QLineEdit, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QLabel,
+    QLineEdit,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+    QFileDialog,
+    QPushButton,
+)
 
 from owl.audio_scale import BarkScale, MelScale
 from owl.converters import (
@@ -28,6 +38,34 @@ class CommonConverterOptions(QWidget):
         super().__init__()
         layout = QVBoxLayout()
         self._view_model = view_model
+
+        def input_video_button_clicked() -> None:
+            path, path2 = QFileDialog.getOpenFileName(caption="Select video")
+            self._view_model.set_input_source(Path(path))
+
+        self._input_selection_file = QPushButton()
+        self._input_selection_file.clicked.connect(input_video_button_clicked)
+
+        self._input_selection_cam_index = QLineEdit()
+        self._input_selection_cam_index.setValidator(QIntValidator(0, 7))
+        on_valid_input(
+            self._input_selection_cam_index,
+            lambda value: self._view_model.set_input_source(value),
+        )
+
+        self._input_selection_stack = QStackedWidget()
+        self._input_selection_stack.addWidget(self._input_selection_file)
+        self._input_selection_stack.addWidget(self._input_selection_cam_index)
+
+        self._input_source = QComboBox()
+        self._input_source.addItem("file")
+        self._input_source.addItem("webcam")
+        self._input_source.currentIndexChanged.connect(
+            self._input_selection_stack.setCurrentIndex
+        )
+
+        layout.addWidget(self._input_source)
+        layout.addWidget(self._input_selection_stack)
 
         self._audio_scale = QComboBox()
         self._audio_scale.addItem("Mel")

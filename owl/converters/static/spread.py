@@ -4,7 +4,6 @@ import itertools
 import cv2
 
 from owl.curves import HilbertCurve
-from owl.events import notify
 from owl.types import Frame
 
 from ..utils import make_square
@@ -21,9 +20,11 @@ class HilbertSpreadConverter(SineConverter):
         self._base_freq = base_freq
         self._order = order
 
-        self._all_freqs = list(itertools.chain.from_iterable(
-            self.generate_frequency_groups(base_freq, order)
-        ))
+        self._all_freqs = list(
+            itertools.chain.from_iterable(
+                self.generate_frequency_groups(base_freq, order)
+            )
+        )
         super().__init__(len(self._all_freqs), transient_duration=transient_duration)
 
     def _extract_sines(self, frame: Frame) -> list[Sine]:
@@ -41,7 +42,7 @@ class HilbertSpreadConverter(SineConverter):
             for point in curve.generate():
                 volumes.extend(resized_frame[point] / 255)
 
-        notify("converter:outputs", frames)
+        # notify("converter:outputs", frames)
         return [Sine(frequency=f, volume=v) for f, v in zip(self._all_freqs, volumes)]
 
     @staticmethod

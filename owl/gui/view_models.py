@@ -1,9 +1,16 @@
-from typing import Any
+import logging
+from pathlib import Path
+import threading
+import time
+from typing import Any, cast
 
 from PyQt6.QtCore import QObject, pyqtBoundSignal, pyqtSignal
+import cv2
 
 from owl.converters import BaseConverter
 from owl.gui.models import ConverterModel
+from owl.output_stream import LiveAudioOutputStream
+from owl.types import Frame
 
 
 class ConverterViewModel(QObject):
@@ -34,7 +41,9 @@ class ConverterViewModel(QObject):
     def __init__(self, model: ConverterModel):
         super().__init__()
         self._model = model
-        self._converter = model.construct_converter()
+        self._set_converter(model.construct_converter())
+        self._output_stream = LiveAudioOutputStream(sample_rate=self._model.sample_rate)
+        self._capture = None
 
         for name in vars(self.__class__):
             if not name.endswith("_updated") or name == "converter_updated":
@@ -54,13 +63,64 @@ class ConverterViewModel(QObject):
 
         self.converter_updated.connect(self._set_converter)
 
+        self._converter_thread = threading.Thread(
+            target=self._converter_loop, daemon=True
+        )
+        self._converter_thread.start()
+
     @property
     def model(self) -> ConverterModel:
         return self._model
 
+    def set_input_source(self, input_source: Path | int | None) -> None:
+        self._model.input_source = input_source
+
+        if self._capture is not None:
+            self._capture.release()
+
+        if isinstance(input_source, int):
+            self._capture = cv2.VideoCapture(input_source)
+        elif isinstance(input_source, Path):
+            self._capture = cv2.VideoCapture(str(input_source))
+        else:
+            self._capture = None
+
+    def _converter_loop(self) -> None:
+        self._output_stream.open()
+
+        while True:
+            # do nothing if capture is not open
+            if self._capture is None or not self._capture.isOpened():
+                continue
+
+            fps = self._capture.get(cv2.CAP_PROP_FPS)
+            last_frame = time.time() * 1000
+
+            delta = 1000 / fps
+
+            # wait for next frame
+            while 1000 * time.time() - last_frame < delta:
+                time.sleep(0.01)
+
+            last_frame += delta
+
+            success, frame = self._capture.read()
+            if not success:
+                logging.error("couldn't read from capture")
+                break
+
+            self._converter.update(cast(Frame, frame))
+            audio_samples = self._converter.get_samples(
+                int(delta * self._converter.sample_rate / 1000)
+            )
+            self._output_stream.write(audio_samples)
+
     def _set_converter(self, converter: BaseConverter) -> None:
         self._converter = converter
 
-        # TODO: set on-events for converter once BaseConverter is an event emitter
-        # self._converter.on_new_input_frame(self.new_cam_frame.emit)
-        # self._converter.on_new_output_frame(self.new_converter_frame.emit)
+        self._converter.on(
+            "new-input-frame", lambda frame: self.new_cam_frame.emit(frame)
+        )
+        self._converter.on(
+            "new-converter-frame", lambda frame: self.new_converter_frame.emit(frame)
+        )
