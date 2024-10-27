@@ -28,10 +28,13 @@ class ConverterViewModel(QObject):
     point_count_updated = pyqtSignal(int, name="point_count_updated")
 
     converter_updated = pyqtSignal(BaseConverter, name="converter_updated")
+    new_cam_frame = pyqtSignal(object, name="new_cam_frame")
+    new_converter_frame = pyqtSignal(object, name="new_converter_frame")
 
     def __init__(self, model: ConverterModel):
         super().__init__()
         self._model = model
+        self._converter = model.construct_converter()
 
         for name in vars(self.__class__):
             if not name.endswith("_updated") or name == "converter_updated":
@@ -49,8 +52,15 @@ class ConverterViewModel(QObject):
 
             signal.connect(lambda value, name=name: update_value(name, value))
 
-        self.converter_updated.connect(lambda converter: print(converter))
+        self.converter_updated.connect(self._set_converter)
 
     @property
     def model(self) -> ConverterModel:
         return self._model
+
+    def _set_converter(self, converter: BaseConverter) -> None:
+        self._converter = converter
+
+        # TODO: set on-events for converter once BaseConverter is an event emitter
+        # self._converter.on_new_input_frame(self.new_cam_frame.emit)
+        # self._converter.on_new_output_frame(self.new_converter_frame.emit)

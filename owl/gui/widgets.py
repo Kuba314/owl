@@ -10,6 +10,8 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
+from owl.types import Frame
+
 from .options_widgets import (
     CommonConverterOptions,
     CurveConverterOptions,
@@ -85,6 +87,11 @@ class MaxContentPixmapLabel(QLabel):
         self.setPixmap(new_pixmap)
         return super().resizeEvent(event)
 
+    def update_from_frame(self, frame: Frame) -> None:
+        height, width = frame.shape
+        image = QImage(frame.data, width, height, QImage.Format.Format_Grayscale8)
+        self._pixmap = QPixmap.fromImage(image)
+
 
 class MainGrid(QFrame):
     def __init__(self, view_model: ConverterViewModel):
@@ -96,17 +103,20 @@ class MainGrid(QFrame):
         layout = QVBoxLayout()
         input_layout = QHBoxLayout()
         output_layout = QHBoxLayout()
-        layout.addLayout(input_layout)
-        layout.addLayout(output_layout)
+        layout.addLayout(input_layout, stretch=3)
+        layout.addLayout(output_layout, stretch=2)
 
-        cam_pixmap = QPixmap.fromImage(QImage("image.png"))
+        cam_pixmap = QPixmap.fromImage(QImage("assets/test_image.png"))
         cam_view = MaxContentPixmapLabel(cam_pixmap)
         converter_view = MaxContentPixmapLabel(cam_pixmap)
         input_layout.addWidget(cam_view)
         input_layout.addWidget(converter_view)
+        view_model.new_cam_frame.connect(cam_view.update_from_frame)
+        view_model.new_converter_frame.connect(converter_view.update_from_frame)
 
-        spectrogram = QLabel("spectrogram")
-        spectrogram.setStyleSheet("border: 1px solid red")
+        spectrogram = QLabel()
+        spectrogram.setPixmap(cam_pixmap)
+        spectrogram.setScaledContents(True)
         output_layout.addWidget(spectrogram)
 
         self.setLayout(layout)
