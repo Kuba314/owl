@@ -24,6 +24,8 @@ class DynamicConverter(BaseConverter):
     _audio_samples_queue: list[float] = field(default_factory=list, init=False)
 
     def __post_init__(self) -> None:
+        super().__post_init__()
+
         self._sound_cue_duration_ms = (
             len(self.sound_cue) / self.sample_rate * 1000
             if self.sound_cue is not None
