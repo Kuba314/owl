@@ -22,5 +22,8 @@ class Application(QApplication):
 
 
 def main() -> None:
+    # TODO: underflow should increase latency, possible skip frames if no frames were skipped for some time
+    # converter produces frames, audio has callback which wants frames
+    # can generate event on underflow, should store a few packets in buffer (purposely not send to cb)
     app = Application()
     app.exec()
