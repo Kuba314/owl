@@ -89,7 +89,7 @@ class MaxContentPixmapLabel(QLabel):
 
     def update_from_frame(self, frame: Frame) -> None:
         height, width = frame.shape
-        image = QImage(frame.data, width, height, QImage.Format.Format_Grayscale8)
+        image = QImage(frame.tobytes(), width, height, QImage.Format.Format_Grayscale8)
         self._pixmap = QPixmap.fromImage(image)
         self.setPixmap(self._pixmap)
 
