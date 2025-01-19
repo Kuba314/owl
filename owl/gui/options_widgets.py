@@ -44,6 +44,7 @@ class CommonConverterOptions(QWidget):
             self._view_model.set_input_source(Path(path))
 
         self._input_selection_file = QPushButton()
+        self._input_selection_file.setText("Open video")
         self._input_selection_file.clicked.connect(input_video_button_clicked)
 
         self._input_selection_cam_index = QLineEdit()
@@ -56,6 +57,7 @@ class CommonConverterOptions(QWidget):
         self._input_selection_stack = QStackedWidget()
         self._input_selection_stack.addWidget(self._input_selection_file)
         self._input_selection_stack.addWidget(self._input_selection_cam_index)
+        self._input_selection_stack.setMaximumHeight(40)
 
         self._input_source = QComboBox()
         self._input_source.addItem("file")
