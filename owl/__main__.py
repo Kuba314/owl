@@ -1,4 +1,5 @@
 import logging
+import sys
 import time
 from typing import cast
 
@@ -165,7 +166,7 @@ def main_loop(cap: cv2.VideoCapture, converter: BaseConverter, output_stream: Au
 
         success, frame = cap.read()
         if not success:
-            logger.error("couldn't read from capture")
+            logger.debug("couldn't read from capture, stopping")
             break
 
         converter.update(cast(Frame, frame))
@@ -177,21 +178,22 @@ def main_loop(cap: cv2.VideoCapture, converter: BaseConverter, output_stream: Au
             break
 
 
-def main() -> None:
+def main() -> int:
     init_logging()
     args = Args.parse()
 
     cap = open_capture(args.input)
     if not cap.isOpened():
-        raise Exception("failed to open cv2 capture")
+        print("error: Failed to open cv2 capture", file=sys.stderr)
+        return 1
 
     output_stream = instantiate_output_stream(args.output, args.sample_rate)
     converter = instantiate_converter(args)
     converter.on("new-input-frame", lambda frame: cv2.imshow("Converter frame pre", frame))
     converter.on("new-converter-frame", lambda frame: cv2.imshow("Converter frame post", frame))
 
-    output_stream.open()
     try:
+        output_stream.open()
         main_loop(cap, converter, output_stream)
     except KeyboardInterrupt:
         pass
@@ -199,3 +201,5 @@ def main() -> None:
         output_stream.close()
         cap.release()
         cv2.destroyAllWindows()
+
+    return 0
