@@ -31,9 +31,6 @@ pyee = "^12.0.0"
 owl = "owl.__main__:main"
 owl-gui = "owl.gui.__main__:main"
 
-[tool.poetry.group.dev]
-optional = true
-
 [tool.poetry.group.dev.dependencies]
 types-pyaudio = "^0.2.16.5"
 pyright = "^1.1.343"
