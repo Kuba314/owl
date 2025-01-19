@@ -189,8 +189,6 @@ def main() -> int:
 
     output_stream = instantiate_output_stream(args.output, args.sample_rate)
     converter = instantiate_converter(args)
-    converter.on("new-input-frame", lambda frame: cv2.imshow("Converter frame pre", frame))
-    converter.on("new-converter-frame", lambda frame: cv2.imshow("Converter frame post", frame))
 
     try:
         output_stream.open()
