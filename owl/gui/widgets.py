@@ -20,9 +20,6 @@ from .options_widgets import (
 )
 from .view_models import ConverterViewModel
 
-FOREGROUND_COLOR = "#faa"
-BACKGROUND_COLOR = "#050"
-
 
 class SidePanel(QFrame):
     def __init__(self, view_model: ConverterViewModel):
@@ -30,8 +27,6 @@ class SidePanel(QFrame):
         self._view_model = view_model
         self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
         self.setLineWidth(3)
-
-        self.setStyleSheet(f"background-color: {FOREGROUND_COLOR}")
 
         self._converter_options_widgets = [
             ("curve", CurveConverterOptions(view_model)),
@@ -41,9 +36,6 @@ class SidePanel(QFrame):
 
         # initialize common converter options
         self._converter_common_options = CommonConverterOptions(view_model)
-        self._converter_common_options.setStyleSheet(
-            f"background-color: {FOREGROUND_COLOR}"
-        )
 
         # initialize stack
         self._converter_specific_options_stack = QStackedWidget()
@@ -105,7 +97,6 @@ class MaxContentPixmapLabel(QLabel):
 class MainGrid(QFrame):
     def __init__(self, view_model: ConverterViewModel):
         super().__init__()
-        self.setStyleSheet(f"background-color: {FOREGROUND_COLOR}")
         self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
         self.setLineWidth(3)
 
@@ -134,7 +125,6 @@ class MainGrid(QFrame):
 class CentralWidget(QSplitter):
     def __init__(self, view_model: ConverterViewModel):
         super().__init__()
-        self.setStyleSheet(f"background-color: {BACKGROUND_COLOR}")
         self.setHandleWidth(15)
 
         side_panel = SidePanel(view_model)
