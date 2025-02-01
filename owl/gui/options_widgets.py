@@ -5,13 +5,14 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QDoubleValidator, QIntValidator
 from PyQt6.QtWidgets import (
     QComboBox,
+    QFileDialog,
+    QGridLayout,
     QLabel,
     QLineEdit,
+    QPushButton,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
-    QFileDialog,
-    QPushButton,
 )
 
 from owl.audio_scale import BarkScale, MelScale
@@ -36,7 +37,7 @@ def on_valid_input(line_edit: QLineEdit, callback: Callable[[int | float], None]
 class CommonConverterOptions(QWidget):
     def __init__(self, view_model: ConverterViewModel):
         super().__init__()
-        layout = QVBoxLayout()
+        layout = QGridLayout()
         self._view_model = view_model
 
         def input_video_button_clicked() -> None:
@@ -66,8 +67,8 @@ class CommonConverterOptions(QWidget):
             self._input_selection_stack.setCurrentIndex
         )
 
-        layout.addWidget(self._input_source)
-        layout.addWidget(self._input_selection_stack)
+        layout.addWidget(self._input_source, 0, 0)
+        layout.addWidget(self._input_selection_stack, 0, 1)
 
         self._audio_scale = QComboBox()
         self._audio_scale.addItem("Mel")

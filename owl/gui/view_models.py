@@ -1,8 +1,8 @@
-import logging
 from pathlib import Path
+from typing import Any, cast
+import logging
 import threading
 import time
-from typing import Any, cast
 
 from PyQt6.QtCore import QObject, pyqtBoundSignal, pyqtSignal
 import cv2

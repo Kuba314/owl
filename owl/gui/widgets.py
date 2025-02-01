@@ -57,8 +57,8 @@ class SidePanel(QFrame):
         self._converter_select.currentIndexChanged.emit(0)
 
         layout = QVBoxLayout()
-        layout.addWidget(self._converter_select)
         layout.addWidget(self._converter_common_options)
+        layout.addWidget(self._converter_select)
         layout.addWidget(self._converter_specific_options_stack)
         self.setLayout(layout)
 
@@ -97,8 +97,6 @@ class MaxContentPixmapLabel(QLabel):
 class MainGrid(QFrame):
     def __init__(self, view_model: ConverterViewModel):
         super().__init__()
-        self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
-        self.setLineWidth(3)
 
         layout = QVBoxLayout()
         input_layout = QHBoxLayout()

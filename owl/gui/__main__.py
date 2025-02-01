@@ -26,4 +26,4 @@ def main() -> None:
     # converter produces frames, audio has callback which wants frames
     # can generate event on underflow, should store a few packets in buffer (purposely not send to cb)
     app = Application()
-    app.exec()
+    sys.exit(app.exec())
