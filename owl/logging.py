@@ -2,7 +2,7 @@ import logging
 from typing import ClassVar
 
 
-def init_logging() -> None:
+def init_logging(level: int = logging.DEBUG) -> None:
     # edited version of https://stackoverflow.com/a/56944256/8844422
     class ColoredLevelnameFormatter(logging.Formatter):
         COLORS: ClassVar = {
@@ -23,4 +23,4 @@ def init_logging() -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(ColoredLevelnameFormatter())
     logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(level)

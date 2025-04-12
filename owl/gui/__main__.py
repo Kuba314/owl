@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow
@@ -24,7 +25,7 @@ class Application(QApplication):
 
 
 def main() -> None:
-    init_logging()
+    init_logging(level=logging.INFO)
 
     # TODO: underflow should increase latency, possible skip frames if no frames were skipped for some time
     # converter produces frames, audio has callback which wants frames
