@@ -35,6 +35,7 @@ class ConverterModel:
     point_count: int = 4
 
     input_source: Path | int | None = None
+    loop: bool = True
 
     def construct_converter(self) -> BaseConverter:
         audio_scale = self.construct_audio_scale()

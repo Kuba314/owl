@@ -116,8 +116,12 @@ class ConverterViewModel(QObject):
                     )
                     output_stream.write(audio_samples)
             finally:
-                self._capture = None
                 output_stream.close()
+                if self._model.loop:
+                    self.set_input_source(self._model.input_source)
+                else:
+                    self._capture.release()
+                    self._capture = None
 
     def _set_converter(self, converter: BaseConverter) -> None:
         self._converter = converter
