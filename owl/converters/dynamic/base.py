@@ -4,7 +4,6 @@ import logging
 
 import numpy as np
 
-from owl.soundgen import Envelope
 from owl.types import Frame, Signal
 
 from ..converter import BaseConverter
@@ -54,8 +53,6 @@ class DynamicConverter(BaseConverter):
         logger.debug(f"converting new video frame with {queue_ms_left:.0f}ms to spare")
 
         signal = self.convert_frame(frame)
-        env = Envelope(0.005, 0.001, 0.001, 0.8)
-        signal = env.apply(signal, sample_rate=self.sample_rate)
         self._audio_samples_queue.extend(signal)
 
     def get_samples(self, count: int) -> Signal:
