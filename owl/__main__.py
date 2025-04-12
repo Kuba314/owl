@@ -186,10 +186,16 @@ def main_loop(cap: cv2.VideoCapture, converter: BaseConverter, output_stream: Au
         time.sleep(0.01)
 
     samples_per_frame = int(delta * converter.sample_rate / 1000)
+    last_frame = time.time() * 1000
     while not capture_closed:
+        # wait for next frame
+        while 1000 * time.time() - last_frame < delta:
+            time.sleep(0.01)
+
         converter.update(frame)
         audio_samples = converter.get_samples(samples_per_frame)
         output_stream.write(audio_samples)
+        last_frame += delta
 
 
 def main() -> int:
