@@ -93,28 +93,52 @@ class ConverterViewModel(QObject):
                 continue
 
             output_stream.open()
+
+            frame: Frame | None = None
+            capture_closed = False
             fps = self._capture.get(cv2.CAP_PROP_FPS)
-            last_frame = time.time() * 1000
             delta = 1000 / fps
 
-            try:
+            def capture_reader() -> None:
+                """
+                Keep setting successfully-read frames to the `frame` variable.
+                """
+                assert self._capture is not None
+                nonlocal frame, capture_closed
+                last_frame = time.time() * 1000
                 while True:
                     # wait for next frame
                     while 1000 * time.time() - last_frame < delta:
                         time.sleep(0.01)
 
-                    last_frame += delta
-
-                    success, frame = self._capture.read()
+                    success, new_frame = self._capture.read()
                     if not success:
                         logging.error("couldn't read from capture")
+                        capture_closed = True
                         break
 
-                    self._converter.update(cast(Frame, frame))
-                    audio_samples = self._converter.get_samples(
-                        int(delta * self._converter.sample_rate / 1000)
-                    )
+                    frame = cast(Frame, new_frame)
+                    last_frame += delta
+
+            try:
+                t = threading.Thread(target=capture_reader, daemon=True)
+                t.start()
+
+                # wait for capture to read first frame
+                while frame is None:
+                    time.sleep(0.01)
+
+                samples_per_frame = int(delta * self._converter.sample_rate / 1000)
+                last_frame = time.time() * 1000
+                while not capture_closed:
+                    # wait for next frame
+                    while 1000 * time.time() - last_frame < delta:
+                        time.sleep(0.01)
+
+                    self._converter.update(frame)
+                    audio_samples = self._converter.get_samples(samples_per_frame)
                     output_stream.write(audio_samples)
+                    last_frame += delta
             finally:
                 output_stream.close()
                 if self._model.loop:
