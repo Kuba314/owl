@@ -37,7 +37,7 @@ class HorizontalScanConverter(ScanConverter):
     def convert_frame(self, frame: Frame) -> Signal:
         frame = grayscale(frame)
         self.emit("new-input-frame", frame)
-        frame = cast(Frame, cv2.resize(frame, (self.strip_count, len(self.frequencies))))
+        frame = cast(Frame, cv2.resize(frame, (self.strip_count, len(self.frequencies)), interpolation=cv2.INTER_AREA))
         self.emit("new-converter-frame", frame)
 
         signal = np.empty(shape=[0], dtype=np.float32)
@@ -58,7 +58,7 @@ class VerticalScanConverter(ScanConverter):
     def convert_frame(self, frame: Frame) -> Signal:
         frame = grayscale(frame)
         self.emit("new-input-frame", frame)
-        frame = cast(Frame, cv2.resize(frame, (len(self.frequencies), self.strip_count)))
+        frame = cast(Frame, cv2.resize(frame, (len(self.frequencies), self.strip_count), interpolation=cv2.INTER_AREA))
         self.emit("new-converter-frame", frame)
 
         signal = np.empty(shape=[0], dtype=np.float32)
@@ -85,7 +85,7 @@ class CircularScanConverter(ScanConverter):
 
         frame = grayscale(frame)
         self.emit("new-input-frame", frame)
-        frame = cast(Frame, cv2.resize(frame, (side_length, side_length)))
+        frame = cast(Frame, cv2.resize(frame, (side_length, side_length), interpolation=cv2.INTER_AREA))
         self.emit("new-converter-frame", frame)
 
         signal = np.empty(shape=[0], dtype=np.float32)
