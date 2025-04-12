@@ -71,7 +71,7 @@ class LiveAudioOutputStream(AudioOutputStream):
         status_flags: int,
     ) -> tuple[bytes, int]:
         if len(self._queue) < frame_count:
-            logger.warning("buffer underflow")
+            logger.warning(f"underflow, need {frame_count} samples but have only {len(self._queue)}")
             return np.zeros((frame_count,), dtype=np.float32).tobytes(), pyaudio.paContinue
 
         data = self._queue[:frame_count]

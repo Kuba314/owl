@@ -1,5 +1,5 @@
 import logging
-import sys
+from threading import Thread
 import time
 from typing import cast
 
@@ -153,29 +153,43 @@ def instantiate_output_stream(output_filename: str | None, sample_rate: int) -> 
 
 
 def main_loop(cap: cv2.VideoCapture, converter: BaseConverter, output_stream: AudioOutputStream) -> None:
+    frame: Frame | None = None
+    capture_closed = False
     fps = cap.get(cv2.CAP_PROP_FPS)
-    last_frame = time.time() * 1000
-
     delta = 1000 / fps
-    while cap.isOpened():
-        # wait for next frame
-        while 1000 * time.time() - last_frame < delta:
-            time.sleep(0.01)
 
-        last_frame += delta
+    def capture_reader() -> None:
+        """
+        Keep setting successfully-read frames to the `frame` variable.
+        """
+        nonlocal frame, capture_closed
+        last_frame = time.time() * 1000
+        while True:
+            # wait for next frame
+            while 1000 * time.time() - last_frame < delta:
+                time.sleep(0.01)
 
-        success, frame = cap.read()
-        if not success:
-            logger.debug("couldn't read from capture, stopping")
-            break
+            success, new_frame = cap.read()
+            if not success:
+                logging.error("couldn't read from capture")
+                capture_closed = True
+                break
 
-        converter.update(cast(Frame, frame))
-        audio_samples = converter.get_samples(int(delta * converter.sample_rate / 1000))
+            frame = cast(Frame, new_frame)
+            last_frame += delta
+
+    t = Thread(target=capture_reader, daemon=True)
+    t.start()
+
+    # wait for capture to read first frame
+    while frame is None:
+        time.sleep(0.01)
+
+    samples_per_frame = int(delta * converter.sample_rate / 1000)
+    while not capture_closed:
+        converter.update(frame)
+        audio_samples = converter.get_samples(samples_per_frame)
         output_stream.write(audio_samples)
-
-        key_press = cv2.waitKey(delay=1)
-        if key_press == ord("q"):
-            break
 
 
 def main() -> int:
@@ -184,7 +198,7 @@ def main() -> int:
 
     cap = open_capture(args.input)
     if not cap.isOpened():
-        print("error: Failed to open cv2 capture", file=sys.stderr)
+        logger.error("error: Failed to open cv2 capture")
         return 1
 
     output_stream = instantiate_output_stream(args.output, args.sample_rate)

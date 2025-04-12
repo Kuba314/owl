@@ -2,6 +2,8 @@ import sys
 
 from PyQt6.QtWidgets import QApplication, QMainWindow
 
+from owl.logging import init_logging
+
 from .models import ConverterModel
 from .view_models import ConverterViewModel
 from .widgets import CentralWidget
@@ -22,6 +24,8 @@ class Application(QApplication):
 
 
 def main() -> None:
+    init_logging()
+
     # TODO: underflow should increase latency, possible skip frames if no frames were skipped for some time
     # converter produces frames, audio has callback which wants frames
     # can generate event on underflow, should store a few packets in buffer (purposely not send to cb)
