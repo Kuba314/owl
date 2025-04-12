@@ -19,8 +19,8 @@ class ConverterModel:
     converter_class: type[BaseConverter] = CurveConverter
     sample_rate: int = 48000
     audio_scale_class: type[AudioScale] = MelScale
-    lowest_frequency: float = 1000
-    highest_frequency: float = 8000
+    lowest_frequency: float = 200
+    highest_frequency: float = 1000
 
     curve_class: type[Curve] = HilbertCurve
     curve_order: int = 2

@@ -42,7 +42,6 @@ class ConverterViewModel(QObject):
         super().__init__()
         self._model = model
         self._set_converter(model.construct_converter())
-        self._output_stream = LiveAudioOutputStream(sample_rate=self._model.sample_rate)
         self._capture = None
 
         for name in vars(self.__class__):
@@ -86,34 +85,38 @@ class ConverterViewModel(QObject):
             self._capture = None
 
     def _converter_loop(self) -> None:
-        self._output_stream.open()
-
+        output_stream = LiveAudioOutputStream(sample_rate=self._model.sample_rate)
         while True:
             # do nothing if capture is not open
             if self._capture is None or not self._capture.isOpened():
+                time.sleep(0.2)
                 continue
 
+            output_stream.open()
             fps = self._capture.get(cv2.CAP_PROP_FPS)
             last_frame = time.time() * 1000
-
             delta = 1000 / fps
 
-            # wait for next frame
-            while 1000 * time.time() - last_frame < delta:
-                time.sleep(0.01)
+            try:
+                while True:
+                    # wait for next frame
+                    while 1000 * time.time() - last_frame < delta:
+                        time.sleep(0.01)
 
-            last_frame += delta
+                    last_frame += delta
 
-            success, frame = self._capture.read()
-            if not success:
-                logging.error("couldn't read from capture")
-                break
+                    success, frame = self._capture.read()
+                    if not success:
+                        logging.error("couldn't read from capture")
+                        break
 
-            self._converter.update(cast(Frame, frame))
-            audio_samples = self._converter.get_samples(
-                int(delta * self._converter.sample_rate / 1000)
-            )
-            self._output_stream.write(audio_samples)
+                    self._converter.update(cast(Frame, frame))
+                    audio_samples = self._converter.get_samples(
+                        int(delta * self._converter.sample_rate / 1000)
+                    )
+                    output_stream.write(audio_samples)
+            finally:
+                output_stream.close()
 
     def _set_converter(self, converter: BaseConverter) -> None:
         self._converter = converter

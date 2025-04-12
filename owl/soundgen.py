@@ -27,6 +27,9 @@ class Envelope:
         sustain_duration = (
             len(signal) - attack_duration - decay_duration - release_duration
         )
+        if sustain_duration < 0:
+            print("sustain is negative, sound is too short to wrap in envelope, not wrapping")
+            return signal
 
         attack = 1 - np.linspace(-1, 0, attack_duration) ** 2
         decay = (

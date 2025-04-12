@@ -1,4 +1,5 @@
-from PyQt6.QtCore import Qt
+import itertools
+from PyQt6.QtCore import Qt, QByteArray, QBuffer, QIODeviceBase
 from PyQt6.QtGui import QImage, QPixmap, QResizeEvent
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -60,6 +61,7 @@ class SidePanel(QFrame):
         layout.addWidget(self._converter_common_options)
         layout.addWidget(self._converter_select)
         layout.addWidget(self._converter_specific_options_stack)
+        layout.addStretch()
         self.setLayout(layout)
 
 
@@ -71,7 +73,7 @@ class MaxContentPixmapLabel(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def setPixmap(self, pixmap: QPixmap) -> None:
-        new_pixmap = self._pixmap.scaled(
+        new_pixmap = pixmap.scaled(
             self.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.FastTransformation,
@@ -89,9 +91,19 @@ class MaxContentPixmapLabel(QLabel):
 
     def update_from_frame(self, frame: Frame) -> None:
         height, width = frame.shape
-        image = QImage(frame.tobytes(), width, height, QImage.Format.Format_Grayscale8)
+        image = QImage(self.fix_row_alignment(frame.tobytes(), width), width, height, QImage.Format.Format_Grayscale8)
         self._pixmap = QPixmap.fromImage(image)
         self.setPixmap(self._pixmap)
+
+    @staticmethod
+    def fix_row_alignment(data: bytes, width: int) -> bytes:
+        """
+        Align row length to 4.
+
+        QImage (with Format_Grayscale8) expects rows to always by 4-byte aligned.
+        """
+        fix = b"\x00" * ((4 - width) % 4)
+        return b"".join(map(lambda x: bytes(x) + fix, itertools.batched(data, width)))
 
 
 class MainGrid(QFrame):
