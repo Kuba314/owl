@@ -1,5 +1,5 @@
 import itertools
-from PyQt6.QtCore import Qt, QByteArray, QBuffer, QIODeviceBase
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QImage, QPixmap, QResizeEvent
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -72,22 +72,22 @@ class MaxContentPixmapLabel(QLabel):
         self.setPixmap(pixmap)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-    def setPixmap(self, pixmap: QPixmap) -> None:
-        new_pixmap = pixmap.scaled(
+    def setPixmap(self, a0: QPixmap) -> None:
+        new_pixmap = a0.scaled(
             self.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.FastTransformation,
         )
         super().setPixmap(new_pixmap)
 
-    def resizeEvent(self, event: QResizeEvent) -> None:
+    def resizeEvent(self, a0: QResizeEvent | None) -> None:
         new_pixmap = self._pixmap.scaled(
             self.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )
         self.setPixmap(new_pixmap)
-        return super().resizeEvent(event)
+        return super().resizeEvent(a0)
 
     def update_from_frame(self, frame: Frame) -> None:
         height, width = frame.shape
