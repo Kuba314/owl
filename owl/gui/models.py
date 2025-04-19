@@ -19,7 +19,7 @@ class ConverterModel:
     converter_class: type[BaseConverter] = CurveConverter
     sample_rate: int = 48000
     audio_scale_class: type[AudioScale] = MelScale
-    lowest_frequency: float = 200
+    lowest_frequency: float = 100
     highest_frequency: float = 1000
 
     curve_class: type[Curve] = HilbertCurve
@@ -29,7 +29,7 @@ class ConverterModel:
     transient_duration: float = 0.01
     strip_count: int = 4
     freqs_per_strip: int = 4
-    ms_per_frame: int = 500
+    ms_per_frame: int = 1000
 
     intensity_levels: int = 4
     point_count: int = 4
