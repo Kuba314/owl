@@ -164,7 +164,7 @@ class CurveConverterOptions(OptionsWidget):
             self._transient_duration,
             lambda value: self._view_model.transient_duration_updated.emit(value),
         )
-        self.add_option("transient duratio", self._transient_duration)
+        self.add_option("transient duration", self._transient_duration)
 
 
 class ScanConverterOptions(OptionsWidget):
